@@ -34,6 +34,9 @@ try {
     throw $exception;
 }
 
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'mcp_token_revoked', 'label' => $token['label']]);
+}
 $content = view('settings/mcp.php', [
     'tokens'       => find_mcp_tokens($pdo),
     'createdToken' => null,

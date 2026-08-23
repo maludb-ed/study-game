@@ -55,6 +55,9 @@ if ($errors !== []) {
         find_exams_with_counts($pdo),
         static fn (array $e): bool => (bool) $e['is_active']
     ));
+    if (acting_via_action_token()) {
+        action_json(['status' => 'error', 'errors' => $errors]);
+    }
     $content = view('games/partials/form.php', [
         'exams' => $exams, 'examId' => $examId, 'questionCount' => $questionCount,
         'seconds' => $seconds, 'streakBonus' => $streakBonus, 'errors' => $errors,
@@ -96,6 +99,11 @@ log_activity($pdo, 'game_created', [
 ]);
 
 $url = '/games/' . $gameId . '/host';
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'game_created', 'game_id' => $gameId,
+                 'pin' => $game['pin'], 'url' => $url,
+                 'note' => 'Players join at /join with the PIN; open the host console at the url.']);
+}
 if (is_htmx_request()) {
     header('Vary: HX-Request');
     header('HX-Push-Url: ' . $url);

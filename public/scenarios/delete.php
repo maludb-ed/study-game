@@ -35,6 +35,11 @@ try {
     throw $exception;
 }
 
+if (acting_via_action_token()) {
+    action_json($deleted
+        ? ['status' => 'success', 'action' => 'scenario_deleted', 'scenario_id' => $id]
+        : ['status' => 'error', 'errors' => ['Only drafts with no linked questions can be deleted.']]);
+}
 if (!$deleted) {
     if (is_htmx_request()) {
         header('Vary: HX-Request');

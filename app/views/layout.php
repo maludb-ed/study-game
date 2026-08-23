@@ -193,7 +193,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
             <div id="assistant-reply" class="fs-12 text-muted mb-1"></div>
             <form id="assistant-form"
                   hx-post="/assistant/message" hx-target="#assistant-reply" hx-swap="innerHTML"
-                  hx-vals='js:{screen: document.querySelector("#page-content [data-screen]")?.dataset.screen || ""}'>
+                  hx-vals='js:{screen: document.querySelector("#page-content [data-screen]")?.dataset.screen || "", entity: document.querySelector("#page-content [data-entity]")?.dataset.entity || "", record_id: document.querySelector("#page-content [data-record-id]")?.dataset.recordId || ""}'>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text"><i class="feather-message-circle"></i></span>
                     <input type="text" name="message" id="assistant-input" class="form-control"

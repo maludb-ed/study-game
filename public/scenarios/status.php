@@ -34,6 +34,10 @@ try {
     throw $exception;
 }
 
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'scenario_status_changed', 'scenario_id' => $id,
+                 'from' => $before['status'], 'to' => $status]);
+}
 if (is_htmx_request()) {
     header('Vary: HX-Request');
     header('HX-Push-Url: /scenarios/' . $id);

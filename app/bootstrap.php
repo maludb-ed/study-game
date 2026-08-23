@@ -6,6 +6,7 @@ require_once __DIR__ . '/config.php';
 date_default_timezone_set(config('APP_TZ', 'America/Chicago'));
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/http.php';
+require_once __DIR__ . '/action_token.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/log.php';
 require_once __DIR__ . '/mail.php';

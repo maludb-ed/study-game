@@ -26,6 +26,12 @@ $result = advance_game($pdo, $id, (int) $user['id'], $expectedState);
 
 // Double-click safe: a mismatch re-renders the actual current stage with 409
 // (the 1s poll also self-heals). Success returns the new stage immediately.
+if (acting_via_action_token()) {
+    action_json(($result['ok']
+        ? ['status' => 'success', 'action' => 'game_advanced']
+        : ['status' => 'error', 'errors' => ['expected_state mismatch']])
+        + ['state' => $result['state'], 'game_id' => $id]);
+}
 if (!$result['ok']) {
     http_response_code(409);
 }

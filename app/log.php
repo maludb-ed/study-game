@@ -15,6 +15,12 @@ function log_activity(PDO $pdo, string $action, array $opts = []): void
 
     if ($actorType === null) {
         $user = function_exists('current_user') ? current_user() : null;
+        if ($user === null && function_exists('acting_via_action_token') && acting_via_action_token()) {
+            // Assistant acting AS a user (action token): attribute to that user.
+            $stmt = $pdo->prepare('SELECT id, display_name FROM users WHERE id = :id');
+            $stmt->execute(['id' => $GLOBALS['__action_token_user_id']]);
+            $user = $stmt->fetch() ?: null;
+        }
         if ($user !== null) {
             $actorType  = 'user';
             $actorId    = (int) $user['id'];

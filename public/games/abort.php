@@ -27,5 +27,8 @@ if (abort_game($pdo, $id)) {
 }
 
 header('Vary: HX-Request');
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'game_aborted', 'game_id' => $id]);
+}
 $stage = find_host_stage($pdo, $id);
 echo view($stage['view'], $stage['data']);

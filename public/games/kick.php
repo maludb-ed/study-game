@@ -43,5 +43,8 @@ if ($target !== null && kick_game_player($pdo, $id, $playerId)) {
 }
 
 header('Vary: HX-Request');
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'player_kicked', 'game_id' => $id]);
+}
 $stage = find_host_stage($pdo, $id);
 echo view($stage['view'], $stage['data']);

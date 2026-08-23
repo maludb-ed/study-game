@@ -35,6 +35,11 @@ try {
     throw $exception;
 }
 
+if (acting_via_action_token()) {
+    action_json($deleted
+        ? ['status' => 'success', 'action' => 'question_deleted', 'question_id' => $id]
+        : ['status' => 'error', 'errors' => ['Only never-played drafts can be deleted; retire it instead.']]);
+}
 if (!$deleted) {
     // Only drafts that were never drawn can be deleted; re-render the view with the truth.
     if (is_htmx_request()) {

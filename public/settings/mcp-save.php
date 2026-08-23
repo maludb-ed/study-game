@@ -34,6 +34,12 @@ if ($errors === []) {
     }
 }
 
+if (acting_via_action_token()) {
+    action_json($errors !== []
+        ? ['status' => 'error', 'errors' => $errors]
+        : ['status' => 'success', 'action' => 'mcp_token_created',
+           'token_plaintext_show_once' => $createdToken['plaintext'], 'label' => $label]);
+}
 $content = view('settings/mcp.php', [
     'tokens'       => find_mcp_tokens($pdo),
     'createdToken' => $createdToken,

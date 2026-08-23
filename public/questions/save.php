@@ -55,6 +55,9 @@ if ($examId > 0 && $domainId > 0) {
 }
 
 if ($errors !== []) {
+    if (acting_via_action_token()) {
+        action_json(['status' => 'error', 'errors' => $errors]);
+    }
     $content = view('questions/partials/form.php', [
         'question'     => ['id' => $id, 'exam_id' => $examId, 'domain_id' => $domainId, 'stem' => $stem,
                            'explanation' => $explanation, 'difficulty' => $difficulty, 'status' => $status,
@@ -108,6 +111,10 @@ try {
     exit('The question could not be saved.');
 }
 
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'question_' . $savedAction, 'question_id' => $savedId,
+                 'url' => '/questions/' . $savedId]);
+}
 if (is_htmx_request()) {
     header('Vary: HX-Request');
     header('HX-Push-Url: /questions/' . $savedId);

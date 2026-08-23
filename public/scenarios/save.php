@@ -23,6 +23,9 @@ if (mb_strlen($body) < 50 || mb_strlen($body) > 4000)    { $errors[] = 'The scen
 if (!in_array($status, ['draft', 'active', 'retired'], true)) { $errors[] = 'Bad status.'; }
 
 if ($errors !== []) {
+    if (acting_via_action_token()) {
+        action_json(['status' => 'error', 'errors' => $errors]);
+    }
     $content = view('scenarios/partials/form.php', [
         'scenario' => ['id' => $id, 'exam_id' => $examId, 'title' => $title, 'body' => $body, 'status' => $status],
         'exams'    => find_exams_with_counts($pdo),
@@ -63,6 +66,10 @@ try {
     exit('The scenario could not be saved.');
 }
 
+if (acting_via_action_token()) {
+    action_json(['status' => 'success', 'action' => 'scenario_' . $savedAction, 'scenario_id' => $savedId,
+                 'url' => '/scenarios/' . $savedId]);
+}
 if (is_htmx_request()) {
     header('Vary: HX-Request');
     header('HX-Push-Url: /scenarios/' . $savedId);

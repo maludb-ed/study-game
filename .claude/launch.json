@@ -3,8 +3,16 @@
   "configurations": [
     {
       "name": "studygame",
-      "runtimeExecutable": "php",
-      "runtimeArgs": ["-S", "localhost:8080", "-t", "public", "public/router.php"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PHP_CLI_SERVER_WORKERS=8",
+        "php",
+        "-S",
+        "localhost:8080",
+        "-t",
+        "public",
+        "public/router.php"
+      ],
       "port": 8080
     }
   ]

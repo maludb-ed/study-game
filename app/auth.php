@@ -16,6 +16,9 @@ function verify_csrf(): void
     if (!in_array($_SERVER['REQUEST_METHOD'], $unsafe, true)) {
         return;
     }
+    if (acting_via_action_token()) {
+        return;   // token-authenticated requests carry no session for CSRF to protect
+    }
     $sent = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $sent)) {
         http_response_code(403);
@@ -47,6 +50,23 @@ function current_user(): ?array
 
 function require_login(): array
 {
+    // Assistant path (chat-actions): a valid short-lived action token authenticates
+    // the request as its user, letting the actions MCP server reuse these controllers.
+    $actionToken = (string) ($_SERVER['HTTP_X_ACTION_TOKEN'] ?? '');
+    if ($actionToken !== '') {
+        $userId = verify_action_token($actionToken);
+        if ($userId !== null) {
+            $stmt = db()->prepare('SELECT * FROM users WHERE id = :id');
+            $stmt->execute(['id' => $userId]);
+            $user = $stmt->fetch();
+            if ($user !== false) {
+                $GLOBALS['__action_token_user_id'] = $userId;
+                return $user;
+            }
+        }
+        http_response_code(401);
+        exit('Invalid action token.');
+    }
     $user = current_user();
     if ($user === null) {
         redirect('/login');

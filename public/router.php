@@ -26,6 +26,9 @@ $routes = [
     '/settings/mcp/save'     => '/settings/mcp-save.php',
     '/settings/mcp/revoke'   => '/settings/mcp-revoke.php',
     '/assistant/message'     => '/assistant/message.php',
+    '/assistant/undo'        => '/assistant/undo.php',
+    '/ama'                   => '/ama/index.php',
+    '/ama/ask'               => '/ama/ask.php',
     '/questions/'               => '/questions/index.php',
     '/questions/new'            => '/questions/form.php',
     '/questions/save'           => '/questions/save.php',
@@ -121,7 +124,6 @@ if (preg_match('#^/analytics/members/(\d+)$#', $path, $m) === 1) {
 // Manifest screens whose slice hasn't shipped yet -> stub (values are OUR table,
 // not user input; stub.php treats them as trusted).
 $stubs = [
-    '/ama'              => ['ama',              'Ask Me Anything',   'Phase 4 (the assistant)',   'nav-ama'],
     '/settings/profile' => ['settings-profile', 'Profile',           'a Phase 2 follow-up',       'nav-settings-profile'],
 ];
 if (isset($stubs[$path])) {
