@@ -1,0 +1,19 @@
+# /etc/systemd/system/studygame-assistant.service (Ubuntu 24.04)
+[Unit]
+Description=Cert Arena unified assistant (Claude Agent SDK)
+After=network.target studygame-records-mcp.service studygame-activity-mcp.service
+
+[Service]
+User=studygame
+WorkingDirectory=/var/www/studygame
+EnvironmentFile=/var/www/studygame/config/services.env
+# services.env must provide ANTHROPIC_API_KEY (never exposed to PHP or the browser),
+# ASSISTANT_MCP_TOKEN, ACTION_TOKEN_SECRET, the *_MCP_DSN/URL values, APP_INTERNAL_URL.
+ExecStart=/var/www/studygame/services/.venv/bin/python services/assistant.py
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target
