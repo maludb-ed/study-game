@@ -38,6 +38,7 @@ $routes = [
     '/join/submit'              => '/join/join.php',
     '/play'                     => '/play/index.php',
     '/play/state'               => '/play/state.php',
+    '/play/answer' => '/play/answer.php',
 ];
 if (isset($routes[$path])) {
     require __DIR__ . $routes[$path];

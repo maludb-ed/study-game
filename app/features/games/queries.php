@@ -73,20 +73,32 @@ function find_game_by_pin(PDO $pdo, string $pin): ?array
 }
 
 /**
- * Version stamp for the polling contract: extract(epoch from updated_at) || '-' || live player count.
- * Bumps on both a games-row update AND a lobby join/kick (which only touches game_players).
+ * Version stamp for the polling contract: epoch(updated_at) '-' live players, and during
+ * the question phase also '-' answered-count '-' seconds-remaining, so countdown and
+ * answered-count tick every second without any games-row write. (S3 extension.)
  */
 function find_game_version(PDO $pdo, int $id): ?string
 {
     $stmt = $pdo->prepare(<<<'SQL'
         SELECT extract(epoch FROM g.updated_at)::bigint AS epoch,
-               (SELECT count(*) FROM game_players gp WHERE gp.game_id = g.id AND gp.kicked_at IS NULL) AS live_players
+               (SELECT count(*) FROM game_players gp WHERE gp.game_id = g.id AND gp.kicked_at IS NULL) AS live_players,
+               CASE WHEN g.state = 'question' THEN
+                   (SELECT count(*) FROM answers a
+                     JOIN game_questions gq ON gq.id = a.game_question_id
+                    WHERE gq.game_id = g.id AND gq.position = g.current_position)
+               ELSE 0 END AS answered,
+               CASE WHEN g.state = 'question' THEN
+                   greatest(0, ceil(extract(epoch FROM (g.question_deadline - now()))))::int
+               ELSE 0 END AS remaining
         FROM games g
         WHERE g.id = :id
     SQL);
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
-    return $row === false ? null : ($row['epoch'] . '-' . $row['live_players']);
+    if ($row === false) {
+        return null;
+    }
+    return $row['epoch'] . '-' . $row['live_players'] . '-' . $row['answered'] . '-' . $row['remaining'];
 }
 
 /**

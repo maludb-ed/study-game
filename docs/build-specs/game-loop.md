@@ -65,3 +65,10 @@ RECOMMENDATION: planning-class builds this slice too — it is the only non-CRUD
 
 ## Open Questions (must be EMPTY before a worker starts)
 - (none)
+
+## Exemplar build notes (planning-class build — S4+ workers read THIS version)
+- host-lobby.php was restructured into the host SCREEN SHELL (page-header + main-content + `$stageHtml`); the PIN card moved into host-players.php (the lobby stage) so it leaves the projector once the game starts. save.php, kick.php, abort.php, advance.php and host.php/host-state.php all render through `find_host_stage()` — every host response is the true current stage.
+- `find_game_version()` gained two components during the question phase (answered-count + seconds-remaining) so countdown and answer counts tick on the 1s poll with zero games-row writes. Poll cadence: lobby 2s (player) / 1s (host); all other stages 1s.
+- Router gained `'/play/answer' => '/play/answer.php'`. answer.php always responds with the player's true current stage (late/duplicate/invalid all self-heal); podium responses carry HTTP 286.
+- Streak derivation: previous streak = position−1's answer row (correct ? its streak_after : 0); a missed question has no row and therefore breaks the streak — verified live.
+- score_answer() unit cases (all pass): sub-500ms → 1000 (+100 when streak ≥2); 500ms/20s → 987; half-time → 750; last-moment and over-limit clamp → 500; wrong → 0 + streak reset.

@@ -1,12 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// S2 PLACEHOLDER — the live game loop (lobby -> question -> ... ) ships with the
-// game-loop slice (S3). This endpoint validates the request and re-renders the
-// host lobby stage with a notice; it never changes games.state.
-
+// Host-driven state-machine transition (S3 — replaces the S2 placeholder).
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/app/features/games/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/games/engine.php';
 
 $user = require_login();
 require_post();
@@ -24,10 +21,14 @@ if ((int) $game['host_user_id'] !== (int) $user['id']) {
     exit('Forbidden');
 }
 
+$expectedState = (string) ($_POST['expected_state'] ?? '');
+$result = advance_game($pdo, $id, (int) $user['id'], $expectedState);
+
+// Double-click safe: a mismatch re-renders the actual current stage with 409
+// (the 1s poll also self-heals). Success returns the new stage immediately.
+if (!$result['ok']) {
+    http_response_code(409);
+}
+$stage = find_host_stage($pdo, $id);
 header('Vary: HX-Request');
-echo view('games/partials/host-players.php', [
-    'game'    => $game,
-    'players' => find_game_players($pdo, $id),
-    'version' => find_game_version($pdo, $id),
-    'notice'  => 'The live game loop ships with the game-loop slice.',
-]);
+echo view($stage['view'], $stage['data']);

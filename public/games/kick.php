@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/app/features/games/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/games/engine.php';
 
 $user = require_login();
 require_post();
@@ -43,8 +43,5 @@ if ($target !== null && kick_game_player($pdo, $id, $playerId)) {
 }
 
 header('Vary: HX-Request');
-echo view('games/partials/host-players.php', [
-    'game'    => find_game($pdo, $id),
-    'players' => find_game_players($pdo, $id),
-    'version' => find_game_version($pdo, $id),
-]);
+$stage = find_host_stage($pdo, $id);
+echo view($stage['view'], $stage['data']);

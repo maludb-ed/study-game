@@ -22,6 +22,18 @@ $pollUrl     = '/games/' . $id . '/host-state?v=' . urlencode((string) $version)
         </div>
     <?php else: ?>
         <div class="card stretch stretch-full">
+            <div class="card-body text-center py-5">
+                <p class="fs-13 text-muted mb-1" id="game-host-exam-label">
+                    <?= e($game['exam_code']) ?> — <?= e($game['question_count']) ?> questions, <?= e($game['seconds_per_question']) ?>s each
+                </p>
+                <p class="text-muted mb-2">Game PIN</p>
+                <div class="display-1 fw-bolder" id="game-host-pin"><?= e($game['pin']) ?></div>
+                <p class="fs-16 mt-3" id="game-host-join-url">
+                    Go to <strong><?= e(config('APP_URL')) ?>/join</strong>
+                </p>
+            </div>
+        </div>
+        <div class="card stretch stretch-full">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h5 class="card-title mb-0">Players <small class="text-muted">(<?= count($livePlayers) ?>)</small></h5>
             </div>

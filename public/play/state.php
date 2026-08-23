@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
+// The player's poll: 204 unchanged / current stage / 286 terminal (kicked, over, podium).
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/app/features/games/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/games/engine.php';
 
 $pdo   = db();
 $token = (string) ($_COOKIE['player_token'] ?? '');
@@ -31,16 +32,18 @@ if (in_array($game['state'], GAMES_TERMINAL_STATES, true)) {
     exit;
 }
 
-$currentVersion   = find_game_version($pdo, (int) $game['id']);
-$requestedVersion = (string) ($_GET['v'] ?? '');
+$stage = find_player_stage($pdo, $player, $game);
 
-if ($currentVersion === $requestedVersion) {
+if ($stage['terminal']) {
+    http_response_code(286);
+    echo view($stage['view'], $stage['data']);
+    exit;
+}
+
+$requestedVersion = (string) ($_GET['v'] ?? '');
+if (($stage['data']['version'] ?? '') === $requestedVersion) {
     http_response_code(204);
     exit;
 }
 
-$players   = find_game_players($pdo, (int) $game['id']);
-$liveCount = count(array_filter($players, static fn (array $p): bool => $p['kicked_at'] === null));
-echo view('play/lobby.php', [
-    'game' => $game, 'player' => $player, 'liveCount' => $liveCount, 'version' => $currentVersion,
-]);
+echo view($stage['view'], $stage['data']);

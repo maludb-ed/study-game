@@ -1,8 +1,8 @@
 <?php
 /**
- * Host console (game-host screen). Vars: $game, $players, $version.
- * The below-PIN area is div#game-host-stage (host-players.php) — the S2 poll target;
- * S3 swaps richer stages into the same id.
+ * Host console SCREEN SHELL (S3 restructure): page-header + main-content wrapping
+ * whatever stage is current. Vars: $game, $stageHtml (a #game-host-stage root
+ * rendered from host-players/host-question/host-reveal/host-leaderboard/host-podium).
  */
 $id = (int) $game['id'];
 ?>
@@ -46,21 +46,7 @@ $id = (int) $game['id'];
 <div class="main-content" id="game-host-content" data-screen="game-host" data-entity="games" data-record-id="<?= $id ?>">
     <div class="row">
         <div class="col-lg-12">
-            <div class="card stretch stretch-full">
-                <div class="card-body text-center py-5">
-                    <p class="fs-13 text-muted mb-1" id="game-host-exam-label">
-                        <?= e($game['exam_code']) ?> — <?= e($game['question_count']) ?> questions, <?= e($game['seconds_per_question']) ?>s each
-                    </p>
-                    <p class="text-muted mb-2">Game PIN</p>
-                    <div class="display-1 fw-bolder" id="game-host-pin"><?= e($game['pin']) ?></div>
-                    <p class="fs-16 mt-3" id="game-host-join-url">
-                        Go to <strong><?= e(config('APP_URL')) ?>/join</strong>
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-12">
-            <?= view('games/partials/host-players.php', ['game' => $game, 'players' => $players, 'version' => $version]) ?>
+<?= $stageHtml ?>
         </div>
     </div>
 </div>

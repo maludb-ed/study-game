@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/app/features/games/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/games/engine.php';
 
 $pdo   = db();
 $token = (string) ($_COOKIE['player_token'] ?? '');
@@ -26,14 +26,8 @@ if ($player['kicked_at'] !== null) {
         'message' => $game['state'] === 'aborted' ? 'This game was aborted.' : 'This game has ended.',
     ]);
 } else {
-    $players   = find_game_players($pdo, (int) $game['id']);
-    $liveCount = count(array_filter($players, static fn (array $p): bool => $p['kicked_at'] === null));
-    $content = view('play/lobby.php', [
-        'game'      => $game,
-        'player'    => $player,
-        'liveCount' => $liveCount,
-        'version'   => find_game_version($pdo, (int) $game['id']),
-    ]);
+    $stage   = find_player_stage($pdo, $player, $game);
+    $content = view($stage['view'], $stage['data']);
 }
 
 echo view('play/layout.php', ['title' => 'Play', 'content' => $content]);

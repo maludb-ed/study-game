@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/app/features/games/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/games/engine.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
 
 $user = require_login();
@@ -99,10 +99,10 @@ $url = '/games/' . $gameId . '/host';
 if (is_htmx_request()) {
     header('Vary: HX-Request');
     header('HX-Push-Url: ' . $url);
+    $stage = find_host_stage($pdo, $gameId);
     echo view('games/partials/host-lobby.php', [
-        'game'    => find_game($pdo, $gameId),
-        'players' => find_game_players($pdo, $gameId),
-        'version' => find_game_version($pdo, $gameId),
+        'game'      => $stage['game'],
+        'stageHtml' => view($stage['view'], $stage['data']),
     ]);
     exit;
 }
