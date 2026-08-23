@@ -31,6 +31,13 @@ $routes = [
     '/questions/import'         => '/questions/import.php',
     '/questions/domain-options' => '/questions/domain-options.php',
     '/exams/'                   => '/exams/index.php',
+    '/games/'                   => '/games/index.php',
+    '/games/new'                => '/games/form.php',
+    '/games/save'               => '/games/save.php',
+    '/join'                     => '/join/index.php',
+    '/join/submit'              => '/join/join.php',
+    '/play'                     => '/play/index.php',
+    '/play/state'               => '/play/state.php',
 ];
 if (isset($routes[$path])) {
     require __DIR__ . $routes[$path];
@@ -54,14 +61,35 @@ if (preg_match('#^/exams/(\d+)$#', $path, $m) === 1) {
     require __DIR__ . '/exams/view.php';
     return true;
 }
+if (preg_match('#^/games/(\d+)/host$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/host.php';
+    return true;
+}
+if (preg_match('#^/games/(\d+)/host-state$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/host-state.php';
+    return true;
+}
+if (preg_match('#^/games/(\d+)/advance$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/advance.php';
+    return true;
+}
+if (preg_match('#^/games/(\d+)/kick$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/kick.php';
+    return true;
+}
+if (preg_match('#^/games/(\d+)/abort$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/abort.php';
+    return true;
+}
 
 // Manifest screens whose slice hasn't shipped yet -> stub (values are OUR table,
 // not user input; stub.php treats them as trusted).
 $stubs = [
-    '/games/'           => ['game-list',        'Games',             'slice S2 (Game Nights)',    'nav-game-list'],
-    '/games/new'        => ['game-new',         'New Game',          'slice S2 (Game Nights)',    'nav-game-new'],
-    '/join'             => ['join',             'Join a Game',       'slice S2 (Game Nights)',    ''],
-    '/play'             => ['play',             'Play',              'slice S2 (Game Nights)',    ''],
     '/analytics/'       => ['analytics-group',  'Group Readiness',   'slice S5 (Analytics)',      'nav-analytics-group'],
     '/analytics/drill'  => ['drill-list',       'Drill List',        'slice S5 (Analytics)',      'nav-drill-list'],
     '/ama'              => ['ama',              'Ask Me Anything',   'Phase 4 (the assistant)',   'nav-ama'],
