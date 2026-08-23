@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/questions/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/scenarios/queries.php';
 
 $user = require_admin();
 require_post();
@@ -19,6 +20,7 @@ $difficulty  = (string) ($_POST['difficulty'] ?? 'medium');
 $status      = (string) ($_POST['status'] ?? 'draft');
 $source      = mb_substr(trim((string) ($_POST['source'] ?? '')), 0, 200);
 $correct     = request_integer('correct') ?? 0;
+$scenarioId  = request_integer('scenario_id');
 
 $optionInputs = [];
 for ($i = 1; $i <= 4; $i++) {
@@ -37,6 +39,13 @@ if (!isset($optionInputs[$correct]))                       { $errors[] = 'Mark o
 if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 2000) { $errors[] = 'The explanation must be 10–2000 characters.'; }
 if (!in_array($difficulty, ['easy', 'medium', 'hard'], true))       { $errors[] = 'Bad difficulty.'; }
 if (!in_array($status, ['draft', 'active', 'retired'], true))       { $errors[] = 'Bad status.'; }
+if ($scenarioId !== null && $examId > 0) {
+    $scenarioOk = false;
+    foreach (find_scenarios_for_exam($pdo, $examId) as $scenarioOption) {
+        if ((int) $scenarioOption['id'] === $scenarioId) { $scenarioOk = true; break; }
+    }
+    if (!$scenarioOk) { $errors[] = 'That scenario does not belong to the chosen exam.'; }
+}
 if ($examId > 0 && $domainId > 0) {
     $domainOk = false;
     foreach (find_domains_for_exam($pdo, $examId) as $domain) {
@@ -48,11 +57,13 @@ if ($examId > 0 && $domainId > 0) {
 if ($errors !== []) {
     $content = view('questions/partials/form.php', [
         'question'     => ['id' => $id, 'exam_id' => $examId, 'domain_id' => $domainId, 'stem' => $stem,
-                           'explanation' => $explanation, 'difficulty' => $difficulty, 'status' => $status, 'source' => $source],
+                           'explanation' => $explanation, 'difficulty' => $difficulty, 'status' => $status,
+                           'source' => $source, 'scenario_id' => $scenarioId],
         'options'      => $optionInputs,
         'correctIndex' => $correct,
         'exams'        => find_exams_with_counts($pdo),
         'domains'      => $examId > 0 ? find_domains_for_exam($pdo, $examId) : [],
+        'scenarios'    => $examId > 0 ? find_scenarios_for_exam($pdo, $examId) : [],
         'errors'       => $errors,
     ]);
     if (is_htmx_request()) {
@@ -72,7 +83,7 @@ foreach ($optionInputs as $position => $text) {
 try {
     $pdo->beginTransaction();
     if ($id === null) {
-        $question = insert_question($pdo, $examId, $domainId, $stem, $optionRows, $explanation, $difficulty, $status, $source, (int) $user['id']);
+        $question = insert_question($pdo, $examId, $domainId, $stem, $optionRows, $explanation, $difficulty, $status, $source, (int) $user['id'], $scenarioId);
         $savedId  = (int) $question['id'];
         log_activity($pdo, 'question_created', [
             'screen' => 'question-add', 'entity' => 'questions', 'entity_id' => $savedId,
@@ -80,7 +91,7 @@ try {
         ]);
         $savedAction = 'created';
     } else {
-        $change  = update_question($pdo, $id, $examId, $domainId, $stem, $optionRows, $explanation, $difficulty, $status, $source);
+        $change  = update_question($pdo, $id, $examId, $domainId, $stem, $optionRows, $explanation, $difficulty, $status, $source, $scenarioId);
         $savedId = $id;
         log_activity($pdo, 'question_updated', [
             'screen' => 'question-edit', 'entity' => 'questions', 'entity_id' => $id,

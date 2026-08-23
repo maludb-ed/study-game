@@ -58,6 +58,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                             <?= $navItem('nav-question-list', '/questions/', 'Questions') ?>
                             <?= $navItem('nav-question-add', '/questions/new', 'Add Question') ?>
                             <?= $navItem('nav-question-import', '/questions/import', 'Import') ?>
+                            <?= $navItem('nav-scenario-list', '/scenarios/', 'Scenarios') ?>
                             <?= $navItem('nav-exam-list', '/exams/', 'Exams & Coverage') ?>
                         </ul>
                     </li>

@@ -15,6 +15,10 @@ action token). A screen or action missing here is unreachable by voice — unfin
 | question-edit | `/questions/{id}/edit` | to change an existing question or its options |
 | question-view | `/questions/{id}` | to read one question with its options, explanation, and play stats |
 | question-import | `/questions/import` | to bulk-import a JSON batch of generated questions |
+| scenario-list | `/scenarios/` | to browse scenario rounds (CCAR-F format) |
+| scenario-add | `/scenarios/new` | to write a new scenario |
+| scenario-edit | `/scenarios/{id}/edit` | to change a scenario's text, exam, or status |
+| scenario-view | `/scenarios/{id}` | to read a scenario and its linked questions |
 | exam-list | `/exams/` | to see the four certifications and blueprint coverage |
 | exam-view | `/exams/{id}` | one exam's domains, weights, and bank coverage |
 | game-new | `/games/new` | to set up a new game night (pick exam, settings) |
@@ -47,6 +51,10 @@ actions always confirm; ambiguity asks one short question.
 | question_retire | POST `/questions/status.php` | id, status=retired | restore prior status | no |
 | question_delete | POST `/questions/delete.php` | id (drafts only; played questions retire instead) | none — hence confirm | **yes** |
 | question_import_batch | POST `/questions/import.php` | json payload (validated per import schema) | delete the batch (import id) | no |
+| scenario_create | POST `/scenarios/save.php` | exam_code, title, body, status=draft | delete the created draft | no |
+| scenario_update | POST `/scenarios/save.php` (id) | id + any field above | restore before-values from the action result | no |
+| scenario_retire | POST `/scenarios/status.php` | id, status=retired | restore prior status | no |
+| scenario_delete | POST `/scenarios/delete.php` | id (drafts with no linked questions) | none — hence confirm | **yes** |
 | game_create | POST `/games/save.php` | exam_code, question_count=10, seconds_per_question=20, streak_bonus=true | abort the lobby game | no |
 | game_advance | POST `/games/{id}/advance.php` | expected_state (guard vs double-fire) | none — a live game only moves forward | no (host console button) |
 | game_kick_player | POST `/games/{id}/kick.php` | player nickname | none (rejoin is possible) | **yes** |

@@ -68,7 +68,7 @@ $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
                             <label class="col-lg-4 col-form-label" id="question-form-field-exam-label" for="question-form-field-exam">Exam</label>
                             <div class="col-lg-8">
                                 <select name="exam_id" id="question-form-field-exam" class="form-select" required
-                                        hx-get="/questions/domain-options" hx-target="#question-form-field-domain" hx-swap="innerHTML">
+                                        hx-get="/questions/dependent-fields" hx-target="#question-form-field-dependent" hx-swap="outerHTML">
                                     <option value="">Choose an exam…</option>
                                     <?php foreach ($exams as $exam): ?>
                                         <option value="<?= e($exam['id']) ?>" <?= (int) ($question['exam_id'] ?? 0) === (int) $exam['id'] ? 'selected' : '' ?>>
@@ -78,19 +78,12 @@ $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
                                 </select>
                             </div>
                         </div>
-                        <div class="mb-4 row" id="question-form-field-domain-row">
-                            <label class="col-lg-4 col-form-label" id="question-form-field-domain-label" for="question-form-field-domain">Domain</label>
-                            <div class="col-lg-8">
-                                <select name="domain_id" id="question-form-field-domain" class="form-select" required>
-                                    <option value="">Choose the exam first…</option>
-                                    <?php foreach ($domains as $domain): ?>
-                                        <option value="<?= e($domain['id']) ?>" <?= (int) ($question['domain_id'] ?? 0) === (int) $domain['id'] ? 'selected' : '' ?>>
-                                            <?= e($domain['name']) ?> (<?= e($domain['weight_pct']) ?>%)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
+                        <?= view('questions/partials/dependent-fields.php', [
+                            'domains'          => $domains,
+                            'scenarios'        => $scenarios,
+                            'domainSelected'   => (int) ($question['domain_id'] ?? 0),
+                            'scenarioSelected' => (int) ($question['scenario_id'] ?? 0),
+                        ]) ?>
                         <div class="mb-4 row" id="question-form-field-stem-row">
                             <label class="col-lg-4 col-form-label" id="question-form-field-stem-label" for="question-form-field-stem">Question</label>
                             <div class="col-lg-8">

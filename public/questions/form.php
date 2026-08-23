@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/questions/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/scenarios/queries.php';
 
 $user = require_admin();
 $pdo  = db();
@@ -34,6 +35,7 @@ $content = view('questions/partials/form.php', [
     'correctIndex' => $correctIndex,
     'exams'        => find_exams_with_counts($pdo),
     'domains'      => !empty($question['exam_id']) ? find_domains_for_exam($pdo, (int) $question['exam_id']) : [],
+    'scenarios'    => !empty($question['exam_id']) ? find_scenarios_for_exam($pdo, (int) $question['exam_id']) : [],
     'errors'       => [],
 ]);
 

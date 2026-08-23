@@ -38,10 +38,12 @@ function find_current_game_question(PDO $pdo, array $game): ?array
 {
     $stmt = $pdo->prepare(<<<'SQL'
         SELECT gq.id, gq.question_id, gq.position, gq.points_possible, gq.started_at, gq.deadline,
-               q.stem, q.explanation,
+               q.stem, q.explanation, q.scenario_id,
+               s.title AS scenario_title, s.body AS scenario_body,
                greatest(0, ceil(extract(epoch FROM (gq.deadline - now()))))::int AS seconds_remaining
         FROM game_questions gq
         JOIN questions q ON q.id = gq.question_id
+        LEFT JOIN scenarios s ON s.id = q.scenario_id
         WHERE gq.game_id = :game_id AND gq.position = :position
     SQL);
     $stmt->execute(['game_id' => $game['id'], 'position' => $game['current_position']]);
@@ -99,6 +101,10 @@ function check_question_complete(PDO $pdo, int $gameId): bool
             $pdo->commit();
             return false;
         }
+        if ($game['question_deadline'] === null) {   // scenario intro — clock not started
+            $pdo->commit();
+            return false;
+        }
         $dueStmt = $pdo->prepare('SELECT now() >= question_deadline FROM games WHERE id = :id');
         $dueStmt->execute(['id' => $gameId]);
         $deadlinePassed = (bool) $dueStmt->fetchColumn();
@@ -145,18 +151,83 @@ function advance_game(PDO $pdo, int $gameId, int $hostUserId, string $expectedSt
             $pdo->commit();
             return ['ok' => false, 'state' => $game === false ? 'missing' : (string) $game['state']];
         }
+        // S6: proceeding past a scenario intro starts the current question's clock.
+        if ($game['state'] === 'question' && $game['scenario_intro_for'] !== null) {
+            if ($expectedState !== 'scenario_intro') {
+                $pdo->commit();
+                return ['ok' => false, 'state' => 'question'];
+            }
+            $stmt = $pdo->prepare(<<<'SQL'
+                UPDATE games
+                SET scenario_intro_for = NULL,
+                    question_started_at = now(),
+                    question_deadline = now() + make_interval(secs => :seconds)
+                WHERE id = :id
+            SQL);
+            $stmt->execute(['seconds' => $game['seconds_per_question'], 'id' => $gameId]);
+            $gqStmt = $pdo->prepare(<<<'SQL'
+                UPDATE game_questions
+                SET started_at = now(), deadline = now() + make_interval(secs => :seconds)
+                WHERE game_id = :id AND position = :position
+                RETURNING question_id
+            SQL);
+            $gqStmt->execute(['seconds' => $game['seconds_per_question'], 'id' => $gameId,
+                              'position' => $game['current_position']]);
+            $questionId = (int) $gqStmt->fetchColumn();
+            log_activity($pdo, 'question_shown', [
+                'game_id' => $gameId, 'entity' => 'questions', 'entity_id' => $questionId,
+                'screen' => 'game-host', 'details' => ['position' => (int) $game['current_position']],
+            ]);
+            $pdo->commit();
+            return ['ok' => true, 'state' => 'question'];
+        }
+
         if ($game['state'] !== $expectedState) {
             $pdo->commit();
             return ['ok' => false, 'state' => (string) $game['state']];
         }
 
         $startQuestion = function (int $position) use ($pdo, $game, $gameId): void {
+            // S6: a question opening a NEW scenario shows the intro first — the clock
+            // stays stopped (NULL deadline) until the host proceeds past the reading.
+            $scStmt = $pdo->prepare(<<<'SQL'
+                SELECT q.scenario_id,
+                       (SELECT q2.scenario_id
+                        FROM game_questions gq2 JOIN questions q2 ON q2.id = gq2.question_id
+                        WHERE gq2.game_id = gq.game_id AND gq2.position = gq.position - 1) AS prev_scenario_id
+                FROM game_questions gq
+                JOIN questions q ON q.id = gq.question_id
+                WHERE gq.game_id = :id AND gq.position = :position
+            SQL);
+            $scStmt->execute(['id' => $gameId, 'position' => $position]);
+            $scenarioRow = $scStmt->fetch();
+            $scenarioId = $scenarioRow !== false && $scenarioRow['scenario_id'] !== null
+                ? (int) $scenarioRow['scenario_id'] : null;
+            $prevScenarioId = $scenarioRow !== false && $scenarioRow['prev_scenario_id'] !== null
+                ? (int) $scenarioRow['prev_scenario_id'] : null;
+            if ($scenarioId !== null && $scenarioId !== $prevScenarioId) {
+                $stmt = $pdo->prepare(<<<'SQL'
+                    UPDATE games
+                    SET state = 'question', current_position = :position,
+                        started_at = COALESCE(started_at, now()),
+                        question_started_at = NULL, question_deadline = NULL,
+                        scenario_intro_for = :scenario_id
+                    WHERE id = :id
+                SQL);
+                $stmt->execute(['position' => $position, 'scenario_id' => $scenarioId, 'id' => $gameId]);
+                log_activity($pdo, 'scenario_shown', [
+                    'game_id' => $gameId, 'entity' => 'scenarios', 'entity_id' => $scenarioId,
+                    'screen' => 'game-host', 'details' => ['position' => $position],
+                ]);
+                return;
+            }
             $stmt = $pdo->prepare(<<<'SQL'
                 UPDATE games
                 SET state = 'question', current_position = :position,
                     started_at = COALESCE(started_at, now()),
                     question_started_at = now(),
-                    question_deadline = now() + make_interval(secs => :seconds)
+                    question_deadline = now() + make_interval(secs => :seconds),
+                    scenario_intro_for = NULL
                 WHERE id = :id
             SQL);
             $stmt->execute(['position' => $position, 'seconds' => $game['seconds_per_question'], 'id' => $gameId]);
@@ -427,6 +498,10 @@ function find_host_stage(PDO $pdo, int $gameId): ?array
                             'data' => $base + ['players' => find_game_players($pdo, $gameId)]];
         case 'question':
             $gq = find_current_game_question($pdo, $game);
+            if ($game['scenario_intro_for'] !== null) {
+                return $base + ['view' => 'games/partials/host-scenario.php',
+                                'data' => $base + ['gq' => $gq]];
+            }
             return $base + ['view' => 'games/partials/host-question.php',
                             'data' => $base + [
                                 'gq'       => $gq,
@@ -468,6 +543,9 @@ function find_player_stage(PDO $pdo, array $player, array $game): array
     switch ($game['state']) {
         case 'question':
             $gq = find_current_game_question($pdo, $game);
+            if ($game['scenario_intro_for'] !== null) {
+                return ['view' => 'play/scenario.php', 'terminal' => false, 'data' => $base + ['gq' => $gq]];
+            }
             $mine = find_player_answer($pdo, (int) $player['id'], (int) $gq['id']);
             if ($mine !== null) {
                 return ['view' => 'play/locked-in.php', 'terminal' => false,

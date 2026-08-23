@@ -152,7 +152,7 @@ function insert_game(
 
     // Step 2: per-domain candidate pool, ordered times_played ASC, miss_rate DESC, random().
     $candidateStmt = $pdo->prepare(<<<'SQL'
-        SELECT q.id,
+        SELECT q.id, q.scenario_id,
                COALESCE(stats.times_played, 0) AS times_played,
                COALESCE(stats.miss_rate, 0)    AS miss_rate
         FROM questions q
@@ -176,14 +176,51 @@ function insert_game(
     }
 
     // Step 3: take target[domain] from each domain; record shortfalls.
-    $selected   = []; // question_id => domain_id, insertion order = selection order
+    // S6 sibling rule: active same-domain siblings of a taken scenario question
+    // replace the lowest-priority non-scenario picks, never exceeding the target.
+    $selected   = []; // question_id => ['domain_id' => .., 'scenario_id' => ..]
     $shortfalls = []; // domain name => shortfall count
     foreach ($domains as $domain) {
         $domainId = (int) $domain['id'];
         $target   = $targets[$domainId];
-        $take     = array_slice($candidatesByDomain[$domainId], 0, $target);
+        $pool     = $candidatesByDomain[$domainId];
+        $take     = array_slice($pool, 0, $target);
+
+        $scenarioIdsInTake = [];
         foreach ($take as $row) {
-            $selected[(int) $row['id']] = $domainId;
+            if ($row['scenario_id'] !== null) {
+                $scenarioIdsInTake[(int) $row['scenario_id']] = true;
+            }
+        }
+        foreach (array_keys($scenarioIdsInTake) as $scenarioId) {
+            foreach ($pool as $candidate) {
+                if ((int) ($candidate['scenario_id'] ?? 0) !== $scenarioId) {
+                    continue;
+                }
+                $alreadyTaken = false;
+                foreach ($take as $row) {
+                    if ($row['id'] === $candidate['id']) {
+                        $alreadyTaken = true;
+                        break;
+                    }
+                }
+                if ($alreadyTaken) {
+                    continue;
+                }
+                for ($i = count($take) - 1; $i >= 0; $i--) {
+                    if ($take[$i]['scenario_id'] === null) {
+                        $take[$i] = $candidate;
+                        continue 2;
+                    }
+                }
+                break; // nothing left to displace in this domain
+            }
+        }
+        foreach ($take as $row) {
+            $selected[(int) $row['id']] = [
+                'domain_id'   => $domainId,
+                'scenario_id' => $row['scenario_id'] !== null ? (int) $row['scenario_id'] : null,
+            ];
         }
         $shortfall = $target - count($take);
         if ($shortfall > 0) {
@@ -207,7 +244,10 @@ function insert_game(
                 if (isset($selected[$qid])) {
                     continue;
                 }
-                $selected[$qid] = $domainId;
+                $selected[$qid] = [
+                    'domain_id'   => $domainId,
+                    'scenario_id' => $row['scenario_id'] !== null ? (int) $row['scenario_id'] : null,
+                ];
                 $stillNeeded--;
             }
         }
@@ -218,9 +258,19 @@ function insert_game(
         throw new DomainException('insufficient_bank');
     }
 
-    // Step 4: final shuffle.
-    $questionIds = array_keys($selected);
-    shuffle($questionIds);
+    // Step 4: shuffle GROUPS — scenario blocks stay consecutive (members by id asc).
+    $groups = [];
+    foreach ($selected as $qid => $meta) {
+        $key = $meta['scenario_id'] !== null ? 's' . $meta['scenario_id'] : 'q' . $qid;
+        $groups[$key][] = $qid;
+    }
+    $groupList = array_values($groups);
+    foreach ($groupList as &$groupMembers) {
+        sort($groupMembers);
+    }
+    unset($groupMembers);
+    shuffle($groupList);
+    $questionIds = array_merge(...$groupList);
 
     // Game row + draw insert together; PIN collisions retry the whole attempt.
     $attempts = 0;

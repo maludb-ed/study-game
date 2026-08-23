@@ -110,17 +110,19 @@ function insert_question(
     string $difficulty,
     string $status,
     string $source,
-    ?int $createdBy
+    ?int $createdBy,
+    ?int $scenarioId = null
 ): array {
     $stmt = $pdo->prepare(<<<'SQL'
-        INSERT INTO questions (exam_id, domain_id, stem, explanation, difficulty, status, source, created_by)
-        VALUES (:exam_id, :domain_id, :stem, :explanation, :difficulty, :status, :source, :created_by)
-        RETURNING id, exam_id, domain_id, stem, explanation, difficulty, status, source
+        INSERT INTO questions (exam_id, domain_id, stem, explanation, difficulty, status, source, created_by, scenario_id)
+        VALUES (:exam_id, :domain_id, :stem, :explanation, :difficulty, :status, :source, :created_by, :scenario_id)
+        RETURNING id, exam_id, domain_id, stem, explanation, difficulty, status, source, scenario_id
     SQL);
     $stmt->execute([
         'exam_id' => $examId, 'domain_id' => $domainId, 'stem' => $stem,
         'explanation' => $explanation, 'difficulty' => $difficulty,
         'status' => $status, 'source' => $source, 'created_by' => $createdBy,
+        'scenario_id' => $scenarioId,
     ]);
     $question = $stmt->fetch();
     replace_question_options($pdo, (int) $question['id'], $options);
@@ -138,7 +140,8 @@ function update_question(
     string $explanation,
     string $difficulty,
     string $status,
-    string $source
+    string $source,
+    ?int $scenarioId = null
 ): array {
     $before = find_question($pdo, $id);
     if ($before === null) {
@@ -147,14 +150,15 @@ function update_question(
     $stmt = $pdo->prepare(<<<'SQL'
         UPDATE questions
         SET exam_id = :exam_id, domain_id = :domain_id, stem = :stem,
-            explanation = :explanation, difficulty = :difficulty, status = :status, source = :source
+            explanation = :explanation, difficulty = :difficulty, status = :status, source = :source,
+            scenario_id = :scenario_id
         WHERE id = :id
-        RETURNING id, exam_id, domain_id, stem, explanation, difficulty, status, source
+        RETURNING id, exam_id, domain_id, stem, explanation, difficulty, status, source, scenario_id
     SQL);
     $stmt->execute([
         'id' => $id, 'exam_id' => $examId, 'domain_id' => $domainId, 'stem' => $stem,
         'explanation' => $explanation, 'difficulty' => $difficulty,
-        'status' => $status, 'source' => $source,
+        'status' => $status, 'source' => $source, 'scenario_id' => $scenarioId,
     ]);
     $after = $stmt->fetch();
     replace_question_options($pdo, $id, $options);

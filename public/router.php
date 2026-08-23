@@ -29,8 +29,13 @@ $routes = [
     '/questions/status'         => '/questions/status.php',
     '/questions/delete'         => '/questions/delete.php',
     '/questions/import'         => '/questions/import.php',
-    '/questions/domain-options' => '/questions/domain-options.php',
+    '/questions/dependent-fields' => '/questions/dependent-fields.php',
     '/exams/'                   => '/exams/index.php',
+    '/scenarios/'               => '/scenarios/index.php',
+    '/scenarios/new'            => '/scenarios/form.php',
+    '/scenarios/save'           => '/scenarios/save.php',
+    '/scenarios/status'         => '/scenarios/status.php',
+    '/scenarios/delete'         => '/scenarios/delete.php',
     '/games/'                   => '/games/index.php',
     '/games/new'                => '/games/form.php',
     '/games/save'               => '/games/save.php',
@@ -57,6 +62,16 @@ if (preg_match('#^/questions/(\d+)$#', $path, $m) === 1) {
 if (preg_match('#^/questions/(\d+)/edit$#', $path, $m) === 1) {
     $_GET['id'] = $m[1];
     require __DIR__ . '/questions/form.php';
+    return true;
+}
+if (preg_match('#^/scenarios/(\d+)$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/scenarios/view.php';
+    return true;
+}
+if (preg_match('#^/scenarios/(\d+)/edit$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/scenarios/form.php';
     return true;
 }
 if (preg_match('#^/exams/(\d+)$#', $path, $m) === 1) {
