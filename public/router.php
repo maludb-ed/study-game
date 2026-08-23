@@ -23,19 +23,41 @@ $routes = [
     '/auth/google/callback'  => '/auth/google/callback.php',
     '/settings/2fa'          => '/settings/twofa.php',
     '/assistant/message'     => '/assistant/message.php',
+    '/questions/'               => '/questions/index.php',
+    '/questions/new'            => '/questions/form.php',
+    '/questions/save'           => '/questions/save.php',
+    '/questions/status'         => '/questions/status.php',
+    '/questions/delete'         => '/questions/delete.php',
+    '/questions/import'         => '/questions/import.php',
+    '/questions/domain-options' => '/questions/domain-options.php',
+    '/exams/'                   => '/exams/index.php',
 ];
 if (isset($routes[$path])) {
     require __DIR__ . $routes[$path];
     return true;
 }
 
+
+// Record routes with an id segment.
+if (preg_match('#^/questions/(\d+)$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/questions/view.php';
+    return true;
+}
+if (preg_match('#^/questions/(\d+)/edit$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/questions/form.php';
+    return true;
+}
+if (preg_match('#^/exams/(\d+)$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/exams/view.php';
+    return true;
+}
+
 // Manifest screens whose slice hasn't shipped yet -> stub (values are OUR table,
 // not user input; stub.php treats them as trusted).
 $stubs = [
-    '/questions/'       => ['question-list',    'Questions',         'slice S1 (Question Bank)',  'nav-question-list'],
-    '/questions/new'    => ['question-add',     'Add Question',      'slice S1 (Question Bank)',  'nav-question-add'],
-    '/questions/import' => ['question-import',  'Import Questions',  'slice S1 (Question Bank)',  'nav-question-import'],
-    '/exams/'           => ['exam-list',        'Exams & Coverage',  'slice S1 (Question Bank)',  'nav-exam-list'],
     '/games/'           => ['game-list',        'Games',             'slice S2 (Game Nights)',    'nav-game-list'],
     '/games/new'        => ['game-new',         'New Game',          'slice S2 (Game Nights)',    'nav-game-new'],
     '/join'             => ['join',             'Join a Game',       'slice S2 (Game Nights)',    ''],
