@@ -52,3 +52,16 @@ Schema tables (read only): all game + question tables, users.
 
 ## Open Questions (must be EMPTY before a worker starts)
 - (none)
+
+## Exemplar-alignment amendments (planning-class, pre-build — workers follow these)
+
+1. **Shared SQL files:** create `app/features/analytics/sql/` with exactly four files — `group_domain_performance.sql`, `member_readiness.sql`, `most_missed_questions.sql`, `alltime_leaderboard.sql` — using `:name` placeholders. `queries.php` loads each with `file_get_contents(__DIR__ . '/sql/{name}.sql')` (path literal, never from input) and prepares it; the Phase 4 records-MCP server will load the same files from Python. Any additional small SQL (headline tiles, trend windows) may live inline in queries.php.
+2. **Readiness formula (locked, from docs/plan/phase-1-mcp-tools.md):** domain_accuracy = correct/answered per domain (claimed answers only); weighted_accuracy = Σ(weight_pct × domain_accuracy) / 100 with unseen domains contributing 0; score = round(100 + 900 × weighted_accuracy); coverage_pct = Σ(weight_pct of domains with ≥1 answered) . Bands: score ≥720 AND coverage ≥60 → success "On track"; coverage <60 → secondary "Not enough data yet"; else 600–719 warning / <600 danger.
+3. **Whose answers count:** member analytics + alltime leaderboard use CLAIMED answers only (`game_players.user_id` set). Group analytics (domain table, tiles, drill list) use ALL answers. State this in each screen's muted footnote line.
+4. **Trend arrow:** accuracy over the last 30 days vs accuracy over everything before; ≥ +5 points → up/success, ≤ −5 → down/danger, else — muted. Omit the arrow entirely (em-dash) when either window has no answers.
+5. **Exam tabs:** card-header nav-tabs pattern (design-system components); each tab is an hx-get to the canonical URL with `?exam_id=N` into #page-content with explicit hx-push-url. Default exam = lowest-id exam having any answers, else exam id 1. Same param on member screen; drill list uses plain filter selects like the questions exemplar.
+6. **Access:** `require_login()` everywhere; read-only; only `log_screen_view` calls ('analytics-group', 'analytics-member', 'drill-list').
+7. **Router:** `'/analytics/' => '/analytics/index.php'`, `'/analytics/drill' => '/analytics/drill.php'`, regex `#^/analytics/members/(\d+)$#` → `/analytics/member.php` (id into `$_GET['id']`). Remove `/analytics/` and `/analytics/drill` from the router stub table.
+8. **Files (final list):** public/analytics/index.php · member.php · drill.php; app/features/analytics/queries.php + sql/ (amendment 1); app/views/analytics/group.php · member.php · drill.php · partials/domain-table.php · readiness-banner.php.
+9. **Sparse data is the normal case right now** (one ended game, unclaimed player; zero claimed answers). Every table/tile/banner must render clean empty states ("No games yet", "No claimed answers yet — check 'count this game toward my readiness' when joining"). Verify against the live database exactly as it is.
+10. **Ids:** screens `analytics-group`, `analytics-member`, `drill-list`; containers `analytics-group-tabs`, `analytics-group-tiles`, `analytics-group-domain-table`, `analytics-group-members-table`, `analytics-member-grid`, `analytics-member-banner`, `drill-list-table`; loop rows `analytics-domain-row-{domain id}`, `analytics-member-row-{user id}`, `drill-row-{question id}`.
