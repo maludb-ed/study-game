@@ -22,6 +22,9 @@ $routes = [
     '/auth/google/start'     => '/auth/google/start.php',
     '/auth/google/callback'  => '/auth/google/callback.php',
     '/settings/2fa'          => '/settings/twofa.php',
+    '/settings/mcp'          => '/settings/mcp.php',
+    '/settings/mcp/save'     => '/settings/mcp-save.php',
+    '/settings/mcp/revoke'   => '/settings/mcp-revoke.php',
     '/assistant/message'     => '/assistant/message.php',
     '/questions/'               => '/questions/index.php',
     '/questions/new'            => '/questions/form.php',
@@ -120,7 +123,6 @@ if (preg_match('#^/analytics/members/(\d+)$#', $path, $m) === 1) {
 $stubs = [
     '/ama'              => ['ama',              'Ask Me Anything',   'Phase 4 (the assistant)',   'nav-ama'],
     '/settings/profile' => ['settings-profile', 'Profile',           'a Phase 2 follow-up',       'nav-settings-profile'],
-    '/settings/mcp'     => ['settings-mcp',     'MCP Access',        'Phase 4 (MCP servers)',     'nav-settings-mcp'],
 ];
 if (isset($stubs[$path])) {
     [$_GET['screen'], $_GET['title'], $_GET['slice'], $_GET['nav']] = $stubs[$path];
