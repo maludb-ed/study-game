@@ -2,6 +2,7 @@
 // Copy to config/env.php (gitignored) and fill in. Production uses real env vars.
 putenv('APP_ENV=dev');                 // dev | production
 putenv('APP_NAME=Cert Arena');
+putenv('APP_TZ=America/Chicago');           // PHP display timezone (storage stays UTC)
 putenv('APP_URL=http://localhost:8080');
 putenv('DB_HOST=127.0.0.1');
 putenv('DB_PORT=5432');
