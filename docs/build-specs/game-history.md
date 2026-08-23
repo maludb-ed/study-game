@@ -37,6 +37,12 @@ Schema tables (read only): games, game_questions, game_players, answers, questio
 ## Open Questions (must be EMPTY before a worker starts)
 - (none)
 
+## Open Questions (raised during the build — see amendments above for context)
+- `find_game_question_stats`'s DATA SHAPES entry lists an exact key set `[position, question_id, stem, correct_pct, avg_response_s, options => [...]]` with no `domain_name`, but the game-report layout (item 3) requires a "domain" column per question. Built it with an added `domain_name` key (joined questions.domain_id -> domains.name) so the required column has a source. Confirm this is the intended fix, or specify a different source for the domain column.
+- `find_game_report`'s ranking-row DATA SHAPES entry lists `[id, nickname, user_id, rank, total, correct_count, answered_count, best_streak]` with no member-name field, but the layout (item 2) requires "nickname (+ member name if claimed)". Built it with an added `member_name` key (LEFT JOIN users on gp.user_id) — null when unclaimed. Confirm this is the intended fix.
+- Amendment 2 describes the row.php edit as touching "the first-cell link (and the actions cell icon link)", but `app/views/games/partials/row.php` has no actions/icon column (6 cells: date, exam, host, state, player_count, pin — unlike `questions/partials/row.php`, which has one). Per the HARD RULES framing ("replace exactly that placeholder"), only the date-cell link was changed (ended and aborted rows now both link to `/games/{id}` the same way live rows link to `/games/{id}/host`); nothing else in the file was touched. Confirm no actions column was intended for the games list.
+- The layout spec's ranking column "correct/total" isn't defined precisely. Implemented as `correct_count` / `game.question_count` (total questions drawn, not answers received) so a player who skipped questions shows e.g. "2/5" rather than "2/2" — consistent with amendment 5's "unanswered counts against you" principle. Confirm this reading.
+
 ## Exemplar-alignment amendments (planning-class, pre-build — workers follow these)
 
 1. **Router:** add regex `#^/games/(\d+)$#` → `/games/view.php` (id into `$_GET['id']`), placed with the existing games regex routes. All other routes untouched.

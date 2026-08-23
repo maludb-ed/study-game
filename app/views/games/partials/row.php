@@ -8,9 +8,10 @@ $stateColors = [
     'lobby' => 'info', 'question' => 'warning', 'reveal' => 'warning', 'leaderboard' => 'warning',
     'podium' => 'success', 'ended' => 'success', 'aborted' => 'danger',
 ];
-$color  = $stateColors[$game['state']] ?? 'secondary';
-$isLive = !in_array($game['state'], GAMES_TERMINAL_STATES, true);
-$url    = '/games/' . (int) $game['id'] . '/host';
+$color      = $stateColors[$game['state']] ?? 'secondary';
+$isLive     = !in_array($game['state'], GAMES_TERMINAL_STATES, true);
+$url        = '/games/' . (int) $game['id'] . '/host';
+$reportUrl  = '/games/' . (int) $game['id'];
 ?>
 <tr id="game-row-<?= e($game['id']) ?>">
     <td id="game-row-<?= e($game['id']) ?>-date">
@@ -19,10 +20,11 @@ $url    = '/games/' . (int) $game['id'] . '/host';
                hx-get="<?= e($url) ?>" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="<?= e($url) ?>">
                 <?= e(fmt_date($game['created_at'])) ?>
             </a>
-        <?php elseif ($game['state'] === 'ended'): ?>
-            <span data-bs-toggle="tooltip" title="Report arrives with S4"><?= e(fmt_date($game['created_at'])) ?></span>
         <?php else: ?>
-            <span><?= e(fmt_date($game['created_at'])) ?></span>
+            <a href="<?= e($reportUrl) ?>"
+               hx-get="<?= e($reportUrl) ?>" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="<?= e($reportUrl) ?>">
+                <?= e(fmt_date($game['created_at'])) ?>
+            </a>
         <?php endif; ?>
     </td>
     <td><span class="badge bg-soft-primary text-primary"><?= e($game['exam_code']) ?></span></td>

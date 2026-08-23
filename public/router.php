@@ -62,6 +62,11 @@ if (preg_match('#^/exams/(\d+)$#', $path, $m) === 1) {
     require __DIR__ . '/exams/view.php';
     return true;
 }
+if (preg_match('#^/games/(\d+)$#', $path, $m) === 1) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/games/view.php';
+    return true;
+}
 if (preg_match('#^/games/(\d+)/host$#', $path, $m) === 1) {
     $_GET['id'] = $m[1];
     require __DIR__ . '/games/host.php';
