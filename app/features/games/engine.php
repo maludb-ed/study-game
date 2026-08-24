@@ -317,7 +317,7 @@ function finalize_game(PDO $pdo, int $gameId): void
  * (a missed question yields no row, so the derivation treats it as a break).
  * Returns ['status' => 'ok'|'duplicate'|'late'|'invalid', 'answer' => ?array].
  */
-function insert_answer(PDO $pdo, array $player, int $optionId): array
+function insert_answer(PDO $pdo, array $player, array $optionIds): array
 {
     $game = find_game($pdo, (int) $player['game_id']);
     if ($game === null || $game['state'] !== 'question') {
@@ -339,16 +339,25 @@ function insert_answer(PDO $pdo, array $player, int $optionId): array
         return ['status' => 'late', 'answer' => null];
     }
 
-    $option = null;
+    // Validate the selected set against this question's options; grade all-or-nothing.
+    $validIds   = [];
+    $correctIds = [];
     foreach ($gq['options'] as $candidate) {
-        if ((int) $candidate['id'] === $optionId) {
-            $option = $candidate;
-            break;
-        }
+        $validIds[(int) $candidate['id']] = true;
+        if ($candidate['is_correct']) { $correctIds[] = (int) $candidate['id']; }
     }
-    if ($option === null) {
+    $selected = [];
+    foreach ($optionIds as $oid) {
+        $oid = (int) $oid;
+        if (isset($validIds[$oid])) { $selected[$oid] = true; }
+    }
+    $selected = array_keys($selected);
+    if ($selected === []) {
         return ['status' => 'invalid', 'answer' => null];
     }
+    $a = $selected;   sort($a);
+    $b = $correctIds; sort($b);
+    $isCorrect = ($b !== [] && $a === $b);
 
     $prevStreak = 0;
     if ((int) $gq['position'] > 1) {
@@ -371,25 +380,34 @@ function insert_answer(PDO $pdo, array $player, int $optionId): array
     $score = score_answer(
         (int) $clock['response_ms'],
         (int) $game['seconds_per_question'],
-        (bool) $option['is_correct'],
+        $isCorrect,
         $prevStreak,
         (bool) $game['streak_bonus']
     );
 
+    // option_id stays set for a single pick (back-compat); NULL for a multi pick.
+    $primaryOption = count($selected) === 1 ? $selected[0] : null;
     try {
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare(<<<'SQL'
             INSERT INTO answers (game_player_id, game_question_id, option_id, is_correct, response_ms, points_awarded, streak_after)
             VALUES (:player_id, :gq_id, :option_id, :is_correct, :response_ms, :points, :streak_after)
             RETURNING *
         SQL);
         $stmt->execute([
-            'player_id' => $player['id'], 'gq_id' => $gq['id'], 'option_id' => $optionId,
-            'is_correct' => $option['is_correct'] ? 't' : 'f',
+            'player_id' => $player['id'], 'gq_id' => $gq['id'], 'option_id' => $primaryOption,
+            'is_correct' => $isCorrect ? 't' : 'f',
             'response_ms' => $clock['response_ms'], 'points' => $score['points'],
             'streak_after' => $score['streak_after'],
         ]);
         $answer = $stmt->fetch();
+        $aoStmt = $pdo->prepare('INSERT INTO answer_options (answer_id, option_id) VALUES (:aid, :oid)');
+        foreach ($selected as $oid) {
+            $aoStmt->execute(['aid' => $answer['id'], 'oid' => $oid]);
+        }
+        $pdo->commit();
     } catch (PDOException $exception) {
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
         if ($exception->getCode() === '23505') {
             $dupStmt = $pdo->prepare('SELECT * FROM answers WHERE game_player_id = :player_id AND game_question_id = :gq_id');
             $dupStmt->execute(['player_id' => $player['id'], 'gq_id' => $gq['id']]);
@@ -401,7 +419,7 @@ function insert_answer(PDO $pdo, array $player, int $optionId): array
     log_activity($pdo, 'answer_submitted', [
         'actor_type' => 'player', 'actor_id' => (int) $player['id'], 'actor_label' => $player['nickname'],
         'game_id' => (int) $game['id'], 'entity' => 'answers', 'entity_id' => (int) $answer['id'],
-        'details' => ['position' => (int) $gq['position'], 'correct' => (bool) $option['is_correct'],
+        'details' => ['position' => (int) $gq['position'], 'correct' => $isCorrect,
                       'response_ms' => (int) $clock['response_ms'], 'points' => $score['points']],
     ]);
     check_question_complete($pdo, (int) $game['id']);
@@ -412,18 +430,26 @@ function insert_answer(PDO $pdo, array $player, int $optionId): array
 function find_answer_distribution(PDO $pdo, int $gameQuestionId, array $options): array
 {
     $stmt = $pdo->prepare(<<<'SQL'
-        SELECT option_id, count(*) AS picks
-        FROM answers WHERE game_question_id = :gq_id GROUP BY option_id
+        SELECT ao.option_id, count(*) AS picks
+        FROM answer_options ao
+        JOIN answers a ON a.id = ao.answer_id
+        WHERE a.game_question_id = :gq_id
+        GROUP BY ao.option_id
     SQL);
     $stmt->execute(['gq_id' => $gameQuestionId]);
     $byOption = array_column($stmt->fetchAll(), 'picks', 'option_id');
-    $total = array_sum($byOption);
+
+    // Denominator is players who answered (a multi-pick answer still counts once).
+    $cnt = $pdo->prepare('SELECT count(*) FROM answers WHERE game_question_id = :gq_id');
+    $cnt->execute(['gq_id' => $gameQuestionId]);
+    $answerCount = (int) $cnt->fetchColumn();
+
     $rows = [];
     foreach ($options as $option) {
         $picks = (int) ($byOption[$option['id']] ?? 0);
         $rows[] = $option + [
             'picks' => $picks,
-            'pct'   => $total > 0 ? (int) round(100 * $picks / $total) : 0,
+            'pct'   => $answerCount > 0 ? (int) round(100 * $picks / $answerCount) : 0,
         ];
     }
     return $rows;
@@ -593,12 +619,24 @@ function find_player_answer(PDO $pdo, int $playerId, int $gameQuestionId): ?arra
     $stmt = $pdo->prepare(<<<'SQL'
         SELECT a.*, o.option_text, o.display_order
         FROM answers a
-        JOIN question_options o ON o.id = a.option_id
+        LEFT JOIN question_options o ON o.id = a.option_id
         WHERE a.game_player_id = :player_id AND a.game_question_id = :gq_id
     SQL);
     $stmt->execute(['player_id' => $playerId, 'gq_id' => $gameQuestionId]);
     $row = $stmt->fetch();
-    return $row === false ? null : $row;
+    if ($row === false) {
+        return null;
+    }
+    $picks = $pdo->prepare(<<<'SQL'
+        SELECT o.display_order, o.option_text
+        FROM answer_options ao
+        JOIN question_options o ON o.id = ao.option_id
+        WHERE ao.answer_id = :aid
+        ORDER BY o.display_order
+    SQL);
+    $picks->execute(['aid' => $row['id']]);
+    $row['picked'] = $picks->fetchAll();
+    return $row;
 }
 
 function find_player_total(PDO $pdo, int $playerId): int

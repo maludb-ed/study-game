@@ -72,6 +72,13 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                             <?= $navItem('nav-game-list', '/games/', 'Games') ?>
                         </ul>
                     </li>
+                    <li class="nxl-item<?= $active === 'nav-practice' ? ' active' : '' ?>">
+                        <a href="/practice" class="nxl-link" id="nav-practice"
+                           hx-get="/practice" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="/practice">
+                            <span class="nxl-micon"><i class="feather-target"></i></span>
+                            <span class="nxl-mtext">Practice</span>
+                        </a>
+                    </li>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link" id="nav-analytics">
                             <span class="nxl-micon"><i class="feather-bar-chart-2"></i></span>

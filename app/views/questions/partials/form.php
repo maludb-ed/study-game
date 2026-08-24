@@ -5,9 +5,15 @@
  *       $exams, $domains, $errors (array).
  */
 $isEdit = !empty($question['id']);
+$rationales = $rationales ?? [];
+$correctIndexes = $correctIndexes ?? [];
 $title  = $isEdit ? 'Edit Question' : 'Add Question';
 $formUrl = '/questions/save';
 $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
+$timesDrawn = (int) ($question['times_drawn'] ?? 0);
+$deleteConfirm = $timesDrawn > 0
+    ? 'This question has been played in ' . $timesDrawn . ' game(s). Deleting it permanently removes those answers from game history and analytics. This cannot be undone. Delete anyway?'
+    : 'Delete this question permanently? This cannot be undone.';
 ?>
 <!-- [ page-header ] start -->
 <div class="page-header" id="question-form-header">
@@ -31,6 +37,14 @@ $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
                 </a>
             </div>
             <div class="d-flex align-items-center gap-2 page-header-right-items-wrapper">
+                <?php if ($isEdit): ?>
+                    <button type="button" id="question-form-delete-btn" class="btn btn-light-brand text-danger"
+                            hx-post="/questions/delete" hx-vals='{"id": <?= (int) $question['id'] ?>}'
+                            hx-confirm="<?= e($deleteConfirm) ?>">
+                        <i class="feather-trash-2 me-2"></i>
+                        <span>Delete</span>
+                    </button>
+                <?php endif; ?>
                 <a href="<?= e($cancelUrl) ?>" id="question-form-cancel-btn" class="btn btn-light-brand"
                    hx-get="<?= e($cancelUrl) ?>" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="<?= e($cancelUrl) ?>">
                     <span>Cancel</span>
@@ -91,6 +105,9 @@ $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
                                           minlength="10" maxlength="1000" required><?= e($question['stem'] ?? '') ?></textarea>
                             </div>
                         </div>
+                        <div class="mb-3 row"><div class="col-lg-8 offset-lg-4">
+                            <span class="fs-11 text-muted"><i class="feather-info me-1"></i>Tick every correct answer. Questions with 2+ correct require players to select them all (all-or-nothing).</span>
+                        </div></div>
                         <?php $optionColors = ['danger', 'primary', 'warning', 'success']; ?>
                         <?php for ($i = 1; $i <= 4; $i++): ?>
                             <div class="mb-3 row" id="question-form-field-option-<?= $i ?>-row">
@@ -106,12 +123,15 @@ $cancelUrl = $isEdit ? '/questions/' . (int) $question['id'] : '/questions/';
                                                class="form-control" maxlength="300"
                                                value="<?= e($options[$i] ?? '') ?>" <?= $i <= 2 ? 'required' : '' ?>>
                                         <span class="input-group-text">
-                                            <input class="form-check-input mt-0" type="radio" name="correct" value="<?= $i ?>"
+                                            <input class="form-check-input mt-0" type="checkbox" name="correct[]" value="<?= $i ?>"
                                                    id="question-form-field-correct-<?= $i ?>"
-                                                   <?= $correctIndex === $i ? 'checked' : '' ?> required>
+                                                   <?= in_array($i, $correctIndexes, true) ? 'checked' : '' ?>>
                                             <label class="fs-11 text-muted ms-1" for="question-form-field-correct-<?= $i ?>">correct</label>
                                         </span>
                                     </div>
+                                    <textarea name="rationale_<?= $i ?>" id="question-form-field-rationale-<?= $i ?>"
+                                              class="form-control form-control-sm mt-2" rows="2" maxlength="500"
+                                              placeholder="Why this option is correct / incorrect (shown in practice mode, optional)"><?= e($rationales[$i] ?? '') ?></textarea>
                                 </div>
                             </div>
                         <?php endfor; ?>

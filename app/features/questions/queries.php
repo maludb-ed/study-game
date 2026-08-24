@@ -85,7 +85,7 @@ function find_question(PDO $pdo, int $id): ?array
         return null;
     }
     $optStmt = $pdo->prepare(<<<'SQL'
-        SELECT id, option_text, is_correct, display_order
+        SELECT id, option_text, is_correct, display_order, rationale
         FROM question_options
         WHERE question_id = :id
         ORDER BY display_order
@@ -170,8 +170,8 @@ function replace_question_options(PDO $pdo, int $questionId, array $options): vo
 {
     $pdo->prepare('DELETE FROM question_options WHERE question_id = :id')->execute(['id' => $questionId]);
     $stmt = $pdo->prepare(<<<'SQL'
-        INSERT INTO question_options (question_id, option_text, is_correct, display_order)
-        VALUES (:question_id, :text, :correct, :display_order)
+        INSERT INTO question_options (question_id, option_text, is_correct, display_order, rationale)
+        VALUES (:question_id, :text, :correct, :display_order, :rationale)
     SQL);
     foreach (array_values($options) as $index => $option) {
         $stmt->execute([
@@ -179,6 +179,7 @@ function replace_question_options(PDO $pdo, int $questionId, array $options): vo
             'text'          => $option['text'],
             'correct'       => $option['correct'] ? 't' : 'f',
             'display_order' => $index + 1,
+            'rationale'     => $option['rationale'] ?? '',
         ]);
     }
 }
@@ -200,14 +201,17 @@ function set_question_status(PDO $pdo, int $id, string $status): array
     return $row;
 }
 
-/** Drafts only, and never once the question has been drawn into a game. */
+/** Hard-delete ANY question, played or not. If it was drawn into games, its
+ *  game_questions rows go first — that cascades their answers (answers.game_question_id
+ *  is ON DELETE CASCADE), which must happen BEFORE the question's options cascade away,
+ *  since answers.option_id -> question_options is NO ACTION. Deleting the question then
+ *  cascades its options. This PERMANENTLY erases that question's game history from
+ *  analytics; "retire" (status change) is the non-destructive alternative. Caller wraps
+ *  this in a transaction, so a mid-way failure rolls the whole thing back. */
 function delete_question(PDO $pdo, int $id): bool
 {
-    $stmt = $pdo->prepare(<<<'SQL'
-        DELETE FROM questions q
-        WHERE q.id = :id AND q.status = 'draft'
-          AND NOT EXISTS (SELECT 1 FROM game_questions gq WHERE gq.question_id = q.id)
-    SQL);
+    $pdo->prepare('DELETE FROM game_questions WHERE question_id = :id')->execute(['id' => $id]);
+    $stmt = $pdo->prepare('DELETE FROM questions WHERE id = :id');
     $stmt->execute(['id' => $id]);
     return $stmt->rowCount() === 1;
 }

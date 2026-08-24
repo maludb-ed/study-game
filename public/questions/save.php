@@ -19,14 +19,20 @@ $explanation = trim((string) ($_POST['explanation'] ?? ''));
 $difficulty  = (string) ($_POST['difficulty'] ?? 'medium');
 $status      = (string) ($_POST['status'] ?? 'draft');
 $source      = mb_substr(trim((string) ($_POST['source'] ?? '')), 0, 200);
-$correct     = request_integer('correct') ?? 0;
+$correctPositions = [];
+foreach ((array) ($_POST['correct'] ?? []) as $cp) {
+    $cp = (int) $cp;
+    if ($cp >= 1 && $cp <= 4) { $correctPositions[$cp] = true; }
+}
 $scenarioId  = request_integer('scenario_id');
 
 $optionInputs = [];
+$rationaleInputs = [];
 for ($i = 1; $i <= 4; $i++) {
     $text = trim((string) ($_POST['option_' . $i] ?? ''));
     if ($text !== '') {
-        $optionInputs[$i] = mb_substr($text, 0, 300);
+        $optionInputs[$i]    = mb_substr($text, 0, 300);
+        $rationaleInputs[$i] = mb_substr(trim((string) ($_POST['rationale_' . $i] ?? '')), 0, 500);
     }
 }
 
@@ -35,7 +41,7 @@ if ($examId <= 0)                                          { $errors[] = 'Choose
 if ($domainId <= 0)                                        { $errors[] = 'Choose a domain.'; }
 if (mb_strlen($stem) < 10 || mb_strlen($stem) > 1000)      { $errors[] = 'The question must be 10–1000 characters.'; }
 if (count($optionInputs) < 2)                              { $errors[] = 'Provide at least two options.'; }
-if (!isset($optionInputs[$correct]))                       { $errors[] = 'Mark one of the filled options as correct.'; }
+if (array_intersect_key($correctPositions, $optionInputs) === []) { $errors[] = 'Mark at least one correct option.'; }
 if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 2000) { $errors[] = 'The explanation must be 10–2000 characters.'; }
 if (!in_array($difficulty, ['easy', 'medium', 'hard'], true))       { $errors[] = 'Bad difficulty.'; }
 if (!in_array($status, ['draft', 'active', 'retired'], true))       { $errors[] = 'Bad status.'; }
@@ -62,8 +68,9 @@ if ($errors !== []) {
         'question'     => ['id' => $id, 'exam_id' => $examId, 'domain_id' => $domainId, 'stem' => $stem,
                            'explanation' => $explanation, 'difficulty' => $difficulty, 'status' => $status,
                            'source' => $source, 'scenario_id' => $scenarioId],
-        'options'      => $optionInputs,
-        'correctIndex' => $correct,
+        'options'       => $optionInputs,
+        'rationales'    => $rationaleInputs,
+        'correctIndexes' => array_keys($correctPositions),
         'exams'        => find_exams_with_counts($pdo),
         'domains'      => $examId > 0 ? find_domains_for_exam($pdo, $examId) : [],
         'scenarios'    => $examId > 0 ? find_scenarios_for_exam($pdo, $examId) : [],
@@ -80,7 +87,7 @@ if ($errors !== []) {
 
 $optionRows = [];
 foreach ($optionInputs as $position => $text) {
-    $optionRows[] = ['text' => $text, 'correct' => $position === $correct];
+    $optionRows[] = ['text' => $text, 'correct' => isset($correctPositions[$position]), 'rationale' => $rationaleInputs[$position] ?? ''];
 }
 
 try {

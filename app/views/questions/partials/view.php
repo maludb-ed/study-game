@@ -6,7 +6,10 @@ $statusColors = ['draft' => 'dark', 'active' => 'success', 'retired' => 'seconda
 $color = $statusColors[$question['status']] ?? 'secondary';
 $id    = (int) $question['id'];
 $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
-$isDeletable = $question['status'] === 'draft' && (int) $question['times_drawn'] === 0;
+$timesDrawn = (int) $question['times_drawn'];
+$deleteConfirm = $timesDrawn > 0
+    ? 'This question has been played in ' . $timesDrawn . ' game(s). Deleting it permanently removes those answers from game history and analytics. This cannot be undone. Delete anyway?'
+    : 'Delete this question permanently? This cannot be undone.';
 ?>
 <!-- [ page-header ] start -->
 <div class="page-header" id="question-view-header">
@@ -45,14 +48,12 @@ $isDeletable = $question['status'] === 'draft' && (int) $question['times_drawn']
                         <span>Retire</span>
                     </button>
                 <?php endif; ?>
-                <?php if ($isDeletable): ?>
-                    <button type="button" id="question-view-delete-btn" class="btn btn-light-brand text-danger"
-                            hx-post="/questions/delete" hx-vals='{"id": <?= $id ?>}'
-                            hx-confirm="Delete this draft question? This cannot be undone.">
-                        <i class="feather-trash-2 me-2"></i>
-                        <span>Delete</span>
-                    </button>
-                <?php endif; ?>
+                <button type="button" id="question-view-delete-btn" class="btn btn-light-brand text-danger"
+                        hx-post="/questions/delete" hx-vals='{"id": <?= $id ?>}'
+                        hx-confirm="<?= e($deleteConfirm) ?>">
+                    <i class="feather-trash-2 me-2"></i>
+                    <span>Delete</span>
+                </button>
                 <a href="/questions/<?= $id ?>/edit" id="question-view-edit-btn" class="btn btn-primary"
                    hx-get="/questions/<?= $id ?>/edit" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="/questions/<?= $id ?>/edit">
                     <i class="feather-edit me-2"></i>
@@ -83,11 +84,18 @@ $isDeletable = $question['status'] === 'draft' && (int) $question['times_drawn']
                     <p class="fs-14" id="question-view-stem"><?= e($question['stem']) ?></p>
                     <ul class="list-group" id="question-view-options">
                         <?php foreach ($question['options'] as $index => $option): ?>
-                            <li class="list-group-item d-flex align-items-center" id="question-view-option-<?= e($option['display_order']) ?>">
-                                <span class="wd-10 ht-10 bg-<?= e($optionColors[$index] ?? 'secondary') ?> me-3 d-inline-block rounded-circle"></span>
-                                <span class="flex-fill"><?= e($option['option_text']) ?></span>
-                                <?php if ($option['is_correct']): ?>
-                                    <span class="badge bg-soft-success text-success">Correct</span>
+                            <li class="list-group-item" id="question-view-option-<?= e($option['display_order']) ?>">
+                                <div class="d-flex align-items-center">
+                                    <span class="wd-10 ht-10 bg-<?= e($optionColors[$index] ?? 'secondary') ?> me-3 d-inline-block rounded-circle"></span>
+                                    <span class="flex-fill"><?= e($option['option_text']) ?></span>
+                                    <?php if ($option['is_correct']): ?>
+                                        <span class="badge bg-soft-success text-success">Correct</span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (trim((string) ($option['rationale'] ?? '')) !== ''): ?>
+                                    <p class="fs-11 text-muted mt-1 mb-0 ps-4" id="question-view-rationale-<?= e($option['display_order']) ?>">
+                                        <i class="feather-info me-1"></i><?= e($option['rationale']) ?>
+                                    </p>
                                 <?php endif; ?>
                             </li>
                         <?php endforeach; ?>

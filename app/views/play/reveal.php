@@ -3,11 +3,10 @@
  * Player stage: personal result. Vars: $game, $player, $gq, $answer (null = missed), $total, $version.
  */
 $pollUrl = '/play/state?v=' . urlencode((string) $version);
-$correctOption = null;
+$correctOptions = [];
 foreach ($gq['options'] as $option) {
     if ($option['is_correct']) {
-        $correctOption = $option;
-        break;
+        $correctOptions[] = $option;
     }
 }
 ?>
@@ -27,9 +26,10 @@ foreach ($gq['options'] as $option) {
         <div class="avatar-text avatar-xl bg-danger mx-auto mb-3"><i class="feather-x"></i></div>
         <h2 class="fs-20 fw-bolder mb-2 text-center" id="play-reveal-title">Not this time</h2>
     <?php endif; ?>
-    <?php if ($correctOption !== null && ($answer === null || !$answer['is_correct'])): ?>
+    <?php if ($correctOptions !== [] && ($answer === null || !$answer['is_correct'])): ?>
         <p class="fs-13 text-center" id="play-reveal-correct">
-            Correct answer: <strong><?= e($correctOption['option_text']) ?></strong>
+            Correct answer<?= count($correctOptions) > 1 ? 's' : '' ?>:
+            <strong><?= e(implode('; ', array_map(static fn ($o) => $o['option_text'], $correctOptions))) ?></strong>
         </p>
     <?php endif; ?>
     <p class="fs-12 text-muted text-center" id="play-reveal-total">Your total: <?= e(number_format((int) $total)) ?> pts</p>

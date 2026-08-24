@@ -20,9 +20,15 @@ if ($game === null) {
     redirect('/join');
 }
 
-$optionId = request_integer('option_id');
-if ($optionId !== null) {
-    insert_answer($pdo, $player, $optionId);   // late/duplicate/invalid all resolve to the true stage below
+// Selections: option_ids[] for multi-select questions, or a single option_id.
+$optionIds = [];
+if (isset($_POST['option_ids']) && is_array($_POST['option_ids'])) {
+    foreach ($_POST['option_ids'] as $oid) { $optionIds[] = (int) $oid; }
+} elseif (($single = request_integer('option_id')) !== null) {
+    $optionIds[] = $single;
+}
+if ($optionIds !== []) {
+    insert_answer($pdo, $player, $optionIds);   // late/duplicate/invalid all resolve to the true stage below
 }
 
 $stage = find_player_stage($pdo, $player, $game);

@@ -1,11 +1,19 @@
 <?php
 /**
  * Player stage: answer buttons (the phone screen). Vars: $game, $player, $gq, $version.
- * Stem lives on the host screen; buttons show option text (truncated at 60 chars).
+ * Stem lives on the host screen; buttons show the FULL option text — never truncated.
+ *
+ * A question with 2+ correct options is MULTI-SELECT (all-or-nothing): the player ticks a
+ * set and taps "Lock in". The selection form uses hx-preserve so the 1s countdown poll
+ * (which self-swaps this stage) doesn't wipe the player's ticks mid-question. Single-correct
+ * questions keep the instant single-tap for speed. is_correct is used server-side only.
  */
 $pollUrl      = '/play/state?v=' . urlencode((string) $version);
 $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
 $remaining    = (int) $gq['seconds_remaining'];
+$correctCount = 0;
+foreach ($gq['options'] as $o) { if ($o['is_correct']) { $correctCount++; } }
+$multi = $correctCount > 1;
 ?>
 <div id="play-stage" hx-get="<?= e($pollUrl) ?>" hx-trigger="every 1s" hx-target="#play-stage" hx-swap="outerHTML">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -14,21 +22,36 @@ $remaining    = (int) $gq['seconds_remaining'];
         </span>
         <span class="fs-4 fw-bold" id="play-question-countdown"><?= e($remaining) ?>s</span>
     </div>
-    <div id="play-answer-buttons">
-        <?php foreach ($gq['options'] as $index => $option): ?>
-            <?php
-            $text = (string) $option['option_text'];
-            if (mb_strlen($text) > 60) {
-                $text = mb_substr($text, 0, 57) . '…';
-            }
-            ?>
-            <button type="button" id="play-answer-btn-<?= e($option['display_order']) ?>"
-                    class="btn btn-<?= e($optionColors[$index] ?? 'secondary') ?> btn-lg w-100 py-4 mb-3 text-start"
-                    hx-post="/play/answer" hx-vals='{"option_id": <?= (int) $option['id'] ?>}'
-                    hx-target="#play-stage" hx-swap="outerHTML">
-                <span class="fw-bold me-2"><?= e($option['display_order']) ?>.</span>
-                <span><?= e($text) ?></span>
-            </button>
-        <?php endforeach; ?>
-    </div>
+    <?php if ($multi): ?>
+        <p class="fs-13 text-info mb-3" id="play-multi-hint"><i class="feather-check-square me-1"></i>Select all that apply, then lock in.</p>
+        <form id="play-answer-form" hx-preserve="true">
+            <?php foreach ($gq['options'] as $index => $option): ?>
+                <input type="checkbox" class="btn-check" name="option_ids[]" autocomplete="off"
+                       id="play-choice-<?= e($option['display_order']) ?>" value="<?= (int) $option['id'] ?>">
+                <label class="btn btn-outline-<?= e($optionColors[$index] ?? 'secondary') ?> btn-lg w-100 py-3 mb-3 text-start"
+                       style="white-space: normal; word-break: break-word;"
+                       for="play-choice-<?= e($option['display_order']) ?>">
+                    <span class="fw-bold me-2"><?= e($option['display_order']) ?>.</span><?= e((string) $option['option_text']) ?>
+                </label>
+            <?php endforeach; ?>
+        </form>
+        <button type="button" id="play-lockin-btn" class="btn btn-primary btn-lg w-100 py-3"
+                hx-post="/play/answer" hx-include="#play-answer-form"
+                hx-target="#play-stage" hx-swap="outerHTML">
+            <i class="feather-check me-2"></i><span>Lock in</span>
+        </button>
+    <?php else: ?>
+        <div id="play-answer-buttons">
+            <?php foreach ($gq['options'] as $index => $option): ?>
+                <button type="button" id="play-answer-btn-<?= e($option['display_order']) ?>"
+                        class="btn btn-<?= e($optionColors[$index] ?? 'secondary') ?> btn-lg w-100 py-4 mb-3 text-start"
+                        style="white-space: normal; word-break: break-word;"
+                        hx-post="/play/answer" hx-vals='{"option_id": <?= (int) $option['id'] ?>}'
+                        hx-target="#play-stage" hx-swap="outerHTML">
+                    <span class="fw-bold me-2"><?= e($option['display_order']) ?>.</span>
+                    <span><?= e((string) $option['option_text']) ?></span>
+                </button>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 </div>

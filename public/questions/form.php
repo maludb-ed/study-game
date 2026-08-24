@@ -12,7 +12,8 @@ $pdo  = db();
 $id = request_integer('id');
 $question = [];
 $options = [];
-$correctIndex = 0;
+$rationales = [];
+$correctIndexes = [];
 
 if ($id !== null) {
     $question = find_question($pdo, $id);
@@ -21,9 +22,10 @@ if ($id !== null) {
         exit('Question not found.');
     }
     foreach ($question['options'] as $option) {
-        $options[(int) $option['display_order']] = $option['option_text'];
+        $options[(int) $option['display_order']]    = $option['option_text'];
+        $rationales[(int) $option['display_order']] = $option['rationale'] ?? '';
         if ($option['is_correct']) {
-            $correctIndex = (int) $option['display_order'];
+            $correctIndexes[] = (int) $option['display_order'];
         }
     }
 }
@@ -32,7 +34,8 @@ log_screen_view($pdo, $id === null ? 'question-add' : 'question-edit');
 $content = view('questions/partials/form.php', [
     'question'     => $question,
     'options'      => $options,
-    'correctIndex' => $correctIndex,
+    'rationales'    => $rationales,
+    'correctIndexes' => $correctIndexes,
     'exams'        => find_exams_with_counts($pdo),
     'domains'      => !empty($question['exam_id']) ? find_domains_for_exam($pdo, (int) $question['exam_id']) : [],
     'scenarios'    => !empty($question['exam_id']) ? find_scenarios_for_exam($pdo, (int) $question['exam_id']) : [],
