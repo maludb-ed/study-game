@@ -4,3 +4,4 @@ vendor/
 services/.env.dev
 services/.dev-token
 services/.venv/
+config/services.env
