@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 
-$user = require_login();
+$user = require_admin();
 $pdo  = db();
 
 log_screen_view($pdo, 'ama');

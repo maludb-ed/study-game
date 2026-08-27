@@ -1,4 +1,4 @@
-"""Cert Arena record-memory MCP server (client-facing, read-only).
+"""Claude Games record-memory MCP server (client-facing, read-only).
 
 Answers the Phase 0 record questions over PostgreSQL through the
 studygame_records_ro role. The four analytics tools load the SAME SQL files the

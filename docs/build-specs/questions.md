@@ -20,6 +20,7 @@ Schema tables: exams, domains, questions, question_options (never modify).
 - Filters (form above table): exam select, domain select (repopulated from exam via HTMX), status select, search input
 - Search matches: stem, explanation. Sort allowlist: updated_at (default desc), stem, difficulty. Page size: 25
 - Row link target: question-view
+- Row actions (admin only): Activate (draft → active) / Deactivate (active → draft) — POST /questions/status, swaps just that `<tr>`; edit icon
 
 ## Form (question-add / question-edit)
 - exam_id | select (active exams) | required | on change reloads domain select | question-form-field-exam
@@ -27,7 +28,7 @@ Schema tables: exams, domains, questions, question_options (never modify).
 - stem | textarea 3 rows | required, 10–1000 chars | question-form-field-stem
 - options 1–4 | text inputs, fixed four rows, rows 3–4 optional | ≥2 filled | question-form-field-option-{1..4}
 - correct | radio group next to options | required, must point at a filled option | question-form-field-correct-{1..4}
-- explanation | textarea 3 rows | required, 10–2000 chars | question-form-field-explanation
+- explanation | textarea 3 rows | required, 10–4000 chars | question-form-field-explanation
 - difficulty | select easy/medium/hard, default medium | required | question-form-field-difficulty
 - status | select draft/active/retired, default draft | required | question-form-field-status
 - source | text input | optional | question-form-field-source
@@ -58,7 +59,7 @@ Schema tables: exams, domains, questions, question_options (never modify).
 - find_domains_for_exam(PDO, int exam_id): array
 
 ## Action manifest entries
-Screens: the seven above. Actions: question_create, question_update, question_activate, question_retire, question_delete (confirm), question_import_batch — endpoints/params/undo per docs/plan/phase-1-action-manifest.md.
+Screens: the seven above. Actions: question_create, question_update, question_activate, question_deactivate, question_retire, question_delete (confirm), question_import_batch — endpoints/params/undo per docs/plan/phase-1-action-manifest.md.
 
 ## Activity log events
 - screen_view (every GET), question_created, question_updated (before/after), question_status_changed, question_deleted, questions_imported (details: count, import id)

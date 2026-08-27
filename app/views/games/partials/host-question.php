@@ -2,10 +2,15 @@
 /**
  * Host stage: live question (the projected screen). Vars: $game, $gq, $answered, $live, $version.
  * Root self-swaps via the 1s poll; the version string ticks every second during questions.
+ *
+ * The first QUESTION_READ_SECONDS are reading time: the answer clock is pinned at its full
+ * value and the countdown shows the reading seconds instead. Answers are accepted throughout
+ * (an answer inside the window scores as instant), so nothing here is disabled.
  */
 $id           = (int) $game['id'];
 $pollUrl      = '/games/' . $id . '/host-state?v=' . urlencode((string) $version);
 $remaining    = (int) $gq['seconds_remaining'];
+$reading      = (int) ($gq['reading_remaining'] ?? 0);
 $seconds      = (int) $game['seconds_per_question'];
 $pct          = $seconds > 0 ? (int) round(100 * $remaining / $seconds) : 0;
 $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
@@ -20,11 +25,17 @@ $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary']
             <span class="fs-13 text-muted" id="game-host-answered-count">
                 <?= e($answered) ?> of <?= e($live) ?> answered
             </span>
-            <span class="fs-4 fw-bold" id="game-host-countdown"><?= e($remaining) ?>s</span>
+            <span class="fs-4 fw-bold" id="game-host-countdown">
+                <?php if ($reading > 0): ?>
+                    <span class="fs-13 text-info" id="game-host-reading">Reading — <?= e($reading) ?>s</span>
+                <?php else: ?>
+                    <?= e($remaining) ?>s
+                <?php endif; ?>
+            </span>
         </div>
         <div class="card-body">
             <div class="progress ht-3 mb-4" id="game-host-countdown-bar">
-                <div class="progress-bar bg-<?= $remaining <= 5 ? 'danger' : 'primary' ?>" role="progressbar"
+                <div class="progress-bar bg-<?= $reading > 0 ? 'info' : ($remaining <= 5 ? 'danger' : 'primary') ?>" role="progressbar"
                      style="width: <?= $pct ?>%" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <h2 class="fs-2 fw-bold text-center my-4" id="game-host-question-stem"><?= e($gq['stem']) ?></h2>

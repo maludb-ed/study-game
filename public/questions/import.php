@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($examsByCode[$examCode])) { $itemErrors[] = "Unknown exam_code '{$examCode}'."; }
             elseif (!isset($examsByCode[$examCode]['domains'][$domain])) { $itemErrors[] = "Domain does not match the exam blueprint."; }
             if (mb_strlen($stem) < 10 || mb_strlen($stem) > 1000)              { $itemErrors[] = 'Stem must be 10–1000 chars.'; }
-            if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 2000) { $itemErrors[] = 'Explanation must be 10–2000 chars.'; }
+            if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 4000) { $itemErrors[] = 'Explanation must be 10–4000 chars.'; }
             if (!in_array($difficulty, ['easy', 'medium', 'hard'], true))       { $itemErrors[] = 'Bad difficulty.'; }
             $optionRows = [];
             $correctCount = 0;
@@ -55,11 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($options as $option) {
                     $text = trim((string) ($option['text'] ?? ''));
                     $isCorrect = ($option['correct'] ?? false) === true;
+                    $rationale = mb_substr(trim((string) ($option['rationale'] ?? '')), 0, 500);
                     if ($text === '' || mb_strlen($text) > 300) { $itemErrors[] = 'Every option needs text (max 300 chars).'; break; }
                     if ($isCorrect) { $correctCount++; }
-                    $optionRows[] = ['text' => $text, 'correct' => $isCorrect];
+                    $optionRows[] = ['text' => $text, 'correct' => $isCorrect, 'rationale' => $rationale];
                 }
-                if ($correctCount !== 1) { $itemErrors[] = 'Exactly one option must be correct.'; }
+                if ($correctCount < 1) { $itemErrors[] = 'At least one option must be marked correct.'; }
             }
 
             if ($itemErrors !== []) {

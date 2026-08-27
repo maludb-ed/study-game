@@ -4,7 +4,15 @@
  * Vars: $title (string), $content (page-header + main-content markup),
  *       $active (nav id, e.g. 'nav-dashboard'), $user (current user row).
  * Swap target: #page-content (.nxl-content) — partials carry .page-header + .main-content.
+ *
+ * Role split: Dashboard, Question Bank, Analytics and Ask Me Anything are admin-only;
+ * members see Game Night, Practice and Settings, and land on /practice. Hiding here is
+ * cosmetic only — the matching controllers call require_admin() for the real boundary.
  */
+$isAdmin = is_admin($user);
+// Assistant command bar: hidden app-wide. Set to true (or is_admin($user)) to bring it
+// back — the markup and its keyboard wiring below are both gated on this flag.
+$showAssistantBar = false;
 $navItem = function (string $id, string $url, string $label) use ($active) {
     $cls = $active === $id ? ' active' : '';
     return '<li class="nxl-item' . $cls . '"><a class="nxl-link" id="' . e($id) . '" href="' . e($url) . '"'
@@ -20,7 +28,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>" id="csrf-token-meta">
-    <title><?= e(config('APP_NAME', 'Cert Arena')) ?> || <?= e($title) ?></title>
+    <title><?= e(config('APP_NAME', 'Claude Games')) ?> || <?= e($title) ?></title>
     <link rel="shortcut icon" type="image/png" href="/assets/images/favicon.png" />
     <link rel="stylesheet" type="text/css" href="/assets/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/assets/vendors/css/vendors.min.css" />
@@ -42,6 +50,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                     <li class="nxl-item nxl-caption">
                         <label>Navigation</label>
                     </li>
+                    <?php if ($isAdmin): ?>
                     <li class="nxl-item<?= $active === 'nav-dashboard' ? ' active' : '' ?>">
                         <a href="/" class="nxl-link" id="nav-dashboard"
                            hx-get="/" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="/">
@@ -62,6 +71,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                             <?= $navItem('nav-exam-list', '/exams/', 'Exams & Coverage') ?>
                         </ul>
                     </li>
+                    <?php endif; ?>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link" id="nav-game-night">
                             <span class="nxl-micon"><i class="feather-play"></i></span>
@@ -79,6 +89,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                             <span class="nxl-mtext">Practice</span>
                         </a>
                     </li>
+                    <?php if ($isAdmin): ?>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link" id="nav-analytics">
                             <span class="nxl-micon"><i class="feather-bar-chart-2"></i></span>
@@ -96,6 +107,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                             <span class="nxl-mtext">Ask Me Anything</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link" id="nav-settings">
                             <span class="nxl-micon"><i class="feather-settings"></i></span>
@@ -187,14 +199,15 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
         <div class="nxl-content" id="page-content">
 <?= $content ?>
         </div>
-        <footer class="footer pb-5" id="page-footer">
+        <footer class="footer <?= $showAssistantBar ? 'pb-5' : 'pb-3' ?>" id="page-footer">
             <p class="fs-11 text-muted fw-medium text-uppercase mb-0 copyright">
-                <span>Copyright © <?= date('Y') ?> — <?= e(config('APP_NAME', 'Cert Arena')) ?></span>
+                <span>Copyright © <?= date('Y') ?> — <?= e(config('APP_NAME', 'Claude Games')) ?></span>
             </p>
         </footer>
     </main>
     <!--! [End] Main !-->
-    <!--! [Start] Assistant command bar (chat-actions; stub handler until Phase 4) !-->
+    <!--! [Start] Assistant command bar (chat-actions; hidden — see $showAssistantBar) !-->
+    <?php if ($showAssistantBar): ?>
     <div id="assistant-bar" class="fixed-bottom bg-body border-top p-2">
         <div class="container-fluid">
             <div id="assistant-reply" class="fs-12 text-muted mb-1"></div>
@@ -212,6 +225,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
             </form>
         </div>
     </div>
+    <?php endif; ?>
     <!--! [End] Assistant command bar !-->
     <script src="/assets/vendors/js/htmx.min.js"></script>
     <script>
@@ -229,6 +243,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
                 new bootstrap.Tooltip(el);
             });
         });
+        <?php if ($showAssistantBar): ?>
         // Command bar: focus fast (dictation types into the focused field).
         document.addEventListener('keydown', function (e) {
             const input = document.getElementById('assistant-input');
@@ -243,6 +258,7 @@ $navItem = function (string $id, string $url, string $label) use ($active) {
             input.value = '';
             input.focus();
         });
+        <?php endif; ?>
     </script>
     <script src="/assets/vendors/js/vendors.min.js"></script>
     <script src="/assets/js/common-init.min.js"></script>

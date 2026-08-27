@@ -51,7 +51,7 @@ function send_app_mail(string $to, string $subject, string $text, string $html =
     }
     malumail_send([
         'from'      => config('MAIL_FROM', 'noreply@example.com'),
-        'from_name' => config('APP_NAME', 'Cert Arena'),
+        'from_name' => config('APP_NAME', 'Claude Games'),
         'to'        => $to,
         'subject'   => $subject,
         'text'      => $text,

@@ -5,7 +5,7 @@ require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/scenarios/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
 
-$user = require_login();
+$user = require_admin();
 $pdo  = db();
 
 $filters = [

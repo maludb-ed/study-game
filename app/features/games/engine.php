@@ -12,6 +12,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/queries.php';
 
 /**
+ * Reading window: the first seconds of a question are free — the stem is on screen but the
+ * answer clock has not started. game_questions.started_at is still the moment the question
+ * was DISPLAYED; the deadline is stamped at started_at + QUESTION_READ_SECONDS + seconds_per_question,
+ * and response_ms is measured from the end of the window (an answer inside it scores as instant).
+ */
+const QUESTION_READ_SECONDS = 10;
+
+/**
  * Pure scoring (unit-tested): Kahoot formula on server-clocked response time.
  *   1000 points under 500ms, else floor((1 − (t / (T·1000)) / 2) × 1000);
  *   wrong = 0 and breaks the streak; +100 when a correct answer makes streak ≥ 2.
@@ -40,13 +48,21 @@ function find_current_game_question(PDO $pdo, array $game): ?array
         SELECT gq.id, gq.question_id, gq.position, gq.points_possible, gq.started_at, gq.deadline,
                q.stem, q.explanation, q.scenario_id,
                s.title AS scenario_title, s.body AS scenario_body,
-               greatest(0, ceil(extract(epoch FROM (gq.deadline - now()))))::int AS seconds_remaining
+               greatest(0, ceil(extract(epoch FROM (gq.started_at + make_interval(secs => :reading) - now()))))::int
+                   AS reading_remaining,
+               least(:seconds::int, greatest(0, ceil(extract(epoch FROM (gq.deadline - now())))))::int
+                   AS seconds_remaining
         FROM game_questions gq
         JOIN questions q ON q.id = gq.question_id
         LEFT JOIN scenarios s ON s.id = q.scenario_id
         WHERE gq.game_id = :game_id AND gq.position = :position
     SQL);
-    $stmt->execute(['game_id' => $game['id'], 'position' => $game['current_position']]);
+    $stmt->execute([
+        'game_id'  => $game['id'],
+        'position' => $game['current_position'],
+        'reading'  => QUESTION_READ_SECONDS,
+        'seconds'  => (int) $game['seconds_per_question'],
+    ]);
     $gq = $stmt->fetch();
     if ($gq === false) {
         return null;
@@ -151,6 +167,9 @@ function advance_game(PDO $pdo, int $gameId, int $hostUserId, string $expectedSt
             $pdo->commit();
             return ['ok' => false, 'state' => $game === false ? 'missing' : (string) $game['state']];
         }
+        // Every stamped window is the reading time plus the answer clock.
+        $questionSeconds = (int) $game['seconds_per_question'] + QUESTION_READ_SECONDS;
+
         // S6: proceeding past a scenario intro starts the current question's clock.
         if ($game['state'] === 'question' && $game['scenario_intro_for'] !== null) {
             if ($expectedState !== 'scenario_intro') {
@@ -164,14 +183,14 @@ function advance_game(PDO $pdo, int $gameId, int $hostUserId, string $expectedSt
                     question_deadline = now() + make_interval(secs => :seconds)
                 WHERE id = :id
             SQL);
-            $stmt->execute(['seconds' => $game['seconds_per_question'], 'id' => $gameId]);
+            $stmt->execute(['seconds' => $questionSeconds, 'id' => $gameId]);
             $gqStmt = $pdo->prepare(<<<'SQL'
                 UPDATE game_questions
                 SET started_at = now(), deadline = now() + make_interval(secs => :seconds)
                 WHERE game_id = :id AND position = :position
                 RETURNING question_id
             SQL);
-            $gqStmt->execute(['seconds' => $game['seconds_per_question'], 'id' => $gameId,
+            $gqStmt->execute(['seconds' => $questionSeconds, 'id' => $gameId,
                               'position' => $game['current_position']]);
             $questionId = (int) $gqStmt->fetchColumn();
             log_activity($pdo, 'question_shown', [
@@ -187,7 +206,7 @@ function advance_game(PDO $pdo, int $gameId, int $hostUserId, string $expectedSt
             return ['ok' => false, 'state' => (string) $game['state']];
         }
 
-        $startQuestion = function (int $position) use ($pdo, $game, $gameId): void {
+        $startQuestion = function (int $position) use ($pdo, $game, $gameId, $questionSeconds): void {
             // S6: a question opening a NEW scenario shows the intro first — the clock
             // stays stopped (NULL deadline) until the host proceeds past the reading.
             $scStmt = $pdo->prepare(<<<'SQL'
@@ -230,14 +249,14 @@ function advance_game(PDO $pdo, int $gameId, int $hostUserId, string $expectedSt
                     scenario_intro_for = NULL
                 WHERE id = :id
             SQL);
-            $stmt->execute(['position' => $position, 'seconds' => $game['seconds_per_question'], 'id' => $gameId]);
+            $stmt->execute(['position' => $position, 'seconds' => $questionSeconds, 'id' => $gameId]);
             $gqStmt = $pdo->prepare(<<<'SQL'
                 UPDATE game_questions
                 SET started_at = now(), deadline = now() + make_interval(secs => :seconds)
                 WHERE game_id = :id AND position = :position
                 RETURNING question_id
             SQL);
-            $gqStmt->execute(['seconds' => $game['seconds_per_question'], 'id' => $gameId, 'position' => $position]);
+            $gqStmt->execute(['seconds' => $questionSeconds, 'id' => $gameId, 'position' => $position]);
             $questionId = (int) $gqStmt->fetchColumn();
             log_activity($pdo, 'question_shown', [
                 'game_id' => $gameId, 'entity' => 'questions', 'entity_id' => $questionId,
@@ -330,10 +349,11 @@ function insert_answer(PDO $pdo, array $player, array $optionIds): array
 
     $timing = $pdo->prepare(<<<'SQL'
         SELECT now() <= deadline AS in_time,
-               greatest(0, floor(extract(epoch FROM (now() - started_at)) * 1000))::int AS response_ms
+               greatest(0, floor(extract(epoch FROM (now() - started_at - make_interval(secs => :reading))) * 1000))::int
+                   AS response_ms
         FROM game_questions WHERE id = :id
     SQL);
-    $timing->execute(['id' => $gq['id']]);
+    $timing->execute(['id' => $gq['id'], 'reading' => QUESTION_READ_SECONDS]);
     $clock = $timing->fetch();
     if (!$clock || !$clock['in_time']) {
         return ['status' => 'late', 'answer' => null];

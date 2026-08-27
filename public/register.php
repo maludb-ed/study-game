@@ -42,18 +42,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "Someone tried to register this address. You already have an account — log in, or reset your password:\n" .
                 config('APP_URL') . '/password/forgot');
         } else {
+            // No email confirmation step: the account is usable the moment it is created
+            // (nothing in the app gates on users.email_verified_at).
             $user = insert_user($pdo, $email, $displayName, password_hash($password, PASSWORD_DEFAULT), false);
-            $token = bin2hex(random_bytes(32));
-            insert_user_token($pdo, (int) $user['id'], 'email_verify', hash('sha256', $token), '7 days');
-            send_app_mail($email, 'Verify your email',
-                "Welcome to the study group! Verify your email:\n" .
-                config('APP_URL') . '/verify?token=' . $token);
             log_activity($pdo, 'user_registered', [
                 'actor_type' => 'user', 'actor_id' => (int) $user['id'], 'actor_label' => $displayName,
                 'screen' => 'register', 'entity' => 'users', 'entity_id' => (int) $user['id'],
             ]);
         }
-        flash_set('success', 'Check your email to finish setting up your account. You can log in now.');
+        flash_set('success', 'Your account is ready — log in below.');
         header('Location: /login');
         exit;
     }

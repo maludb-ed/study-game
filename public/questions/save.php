@@ -42,7 +42,7 @@ if ($domainId <= 0)                                        { $errors[] = 'Choose
 if (mb_strlen($stem) < 10 || mb_strlen($stem) > 1000)      { $errors[] = 'The question must be 10–1000 characters.'; }
 if (count($optionInputs) < 2)                              { $errors[] = 'Provide at least two options.'; }
 if (array_intersect_key($correctPositions, $optionInputs) === []) { $errors[] = 'Mark at least one correct option.'; }
-if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 2000) { $errors[] = 'The explanation must be 10–2000 characters.'; }
+if (mb_strlen($explanation) < 10 || mb_strlen($explanation) > 4000) { $errors[] = 'The explanation must be 10–4000 characters.'; }
 if (!in_array($difficulty, ['easy', 'medium', 'hard'], true))       { $errors[] = 'Bad difficulty.'; }
 if (!in_array($status, ['draft', 'active', 'retired'], true))       { $errors[] = 'Bad status.'; }
 if ($scenarioId !== null && $examId > 0) {

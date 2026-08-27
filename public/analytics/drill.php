@@ -6,7 +6,7 @@ require_once dirname(__DIR__, 2) . '/app/features/analytics/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/questions/queries.php';
 
-$user = require_login();
+$user = require_admin();
 $pdo  = db();
 
 $filters = [

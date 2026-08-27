@@ -3,7 +3,8 @@
  * Report section 3: per-question breakdown with option distribution mini-bars.
  * Vars: $questionStats (per find_game_question_stats: position, question_id, stem,
  * domain_name, correct_pct, avg_response_s, options => [option_text, display_order,
- * is_correct, picks, pct]).
+ * is_correct, picks, pct]), $isAdmin (members can't open the question bank, so their
+ * stems render as plain text).
  */
 $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
 ?>
@@ -40,10 +41,14 @@ $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary']
                             <tr id="game-report-question-row-<?= e($stat['position']) ?>">
                                 <td><?= e($stat['position']) ?></td>
                                 <td id="game-report-question-row-<?= e($stat['position']) ?>-stem">
-                                    <a href="<?= e($questionUrl) ?>"
-                                       hx-get="<?= e($questionUrl) ?>" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="<?= e($questionUrl) ?>">
+                                    <?php if ($isAdmin): ?>
+                                        <a href="<?= e($questionUrl) ?>"
+                                           hx-get="<?= e($questionUrl) ?>" hx-target="#page-content" hx-swap="innerHTML" hx-push-url="<?= e($questionUrl) ?>">
+                                            <?= e($stem) ?>
+                                        </a>
+                                    <?php else: ?>
                                         <?= e($stem) ?>
-                                    </a>
+                                    <?php endif; ?>
                                 </td>
                                 <td><small class="text-muted"><?= e($stat['domain_name']) ?></small></td>
                                 <td class="text-end"><?= e($stat['correct_pct']) ?>%</td>

@@ -41,6 +41,12 @@ $deleteConfirm = $timesDrawn > 0
                         <span>Activate</span>
                     </button>
                 <?php else: ?>
+                    <button type="button" id="question-view-deactivate-btn" class="btn btn-light-brand"
+                            hx-post="/questions/status" hx-vals='{"id": <?= $id ?>, "status": "draft"}'
+                            hx-target="#page-content" hx-swap="innerHTML">
+                        <i class="feather-slash me-2"></i>
+                        <span>Deactivate</span>
+                    </button>
                     <button type="button" id="question-view-retire-btn" class="btn btn-light-brand"
                             hx-post="/questions/status" hx-vals='{"id": <?= $id ?>, "status": "retired"}'
                             hx-target="#page-content" hx-swap="innerHTML">

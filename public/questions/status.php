@@ -40,6 +40,11 @@ if (acting_via_action_token()) {
 }
 if (is_htmx_request()) {
     header('Vary: HX-Request');
+    // Row-targeted swap from the list screen: re-render just that <tr>, stay on the list.
+    if (($_SERVER['HTTP_HX_TARGET'] ?? '') === 'question-row-' . $id) {
+        echo view('questions/partials/row.php', ['question' => find_question($pdo, $id), 'isAdmin' => true]);
+        exit;
+    }
     header('HX-Push-Url: /questions/' . $id);
     echo view('questions/partials/view.php', ['question' => find_question($pdo, $id), 'saved' => null]);
     exit;

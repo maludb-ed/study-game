@@ -1,5 +1,6 @@
 <?php
-/** Results region (table + pagination). Vars: $result, $filters. Root id sub-swaps. */
+/** Results region (table + pagination). Vars: $result, $filters, $isAdmin. Root id sub-swaps. */
+$isAdmin = (bool) ($isAdmin ?? false);
 $total = $result['total'];
 $pages = max(1, (int) ceil($total / QUESTIONS_PAGE_SIZE));
 $page  = min(max(1, (int) $filters['page']), $pages);
@@ -39,7 +40,7 @@ $qs = static function (int $toPage) use ($filters): string {
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($result['rows'] as $question): ?>
-                            <?= view('questions/partials/row.php', ['question' => $question]) ?>
+                            <?= view('questions/partials/row.php', ['question' => $question, 'isAdmin' => $isAdmin]) ?>
                         <?php endforeach; ?>
                     </tbody>
                 </table>

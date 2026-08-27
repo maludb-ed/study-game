@@ -18,6 +18,7 @@ log_screen_view($pdo, 'game-report');
 $content = view('games/report.php', [
     'game'          => $game,
     'questionStats' => find_game_question_stats($pdo, $id),
+    'isAdmin'       => is_admin($user),
 ]);
 
 if (is_htmx_request()) {

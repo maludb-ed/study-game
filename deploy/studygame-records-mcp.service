@@ -1,6 +1,6 @@
 # /etc/systemd/system/studygame-records-mcp.service (Ubuntu 24.04)
 [Unit]
-Description=Cert Arena record-memory MCP server (read-only)
+Description=Claude Games record-memory MCP server (read-only)
 After=network.target postgresql.service
 
 [Service]

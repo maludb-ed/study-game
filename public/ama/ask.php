@@ -4,7 +4,7 @@ declare(strict_types=1);
 // AMA turn: thin proxy to the unified assistant (surface 'ama'), appends the exchange.
 require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 
-$user = require_login();
+$user = require_admin();
 require_post();
 verify_csrf();
 $pdo = db();

@@ -23,7 +23,7 @@
                     <h5 class="card-title">Paste a JSON batch</h5>
                 </div>
                 <div class="card-body">
-                    <p class="fs-12 text-muted">Format: <code>[{"exam_code", "domain", "stem", "options": [{"text", "correct"}], "explanation", "difficulty?", "source?"}]</code>. 2–6 options, exactly one correct. Imports land as <span class="badge bg-soft-dark text-dark">Draft</span>, all-or-nothing.</p>
+                    <p class="fs-12 text-muted">Format: <code>[{"exam_code", "domain", "stem", "options": [{"text", "correct", "rationale?"}], "explanation", "difficulty?", "source?"}]</code>. 2–6 options; mark <code>"correct": true</code> on one <em>or more</em> (multi-correct is scored all-or-nothing). Optional per-option <code>rationale</code> (why it’s right/wrong, shown in practice). Imports land as <span class="badge bg-soft-dark text-dark">Draft</span>.</p>
                     <form id="question-import-form" action="/questions/import" method="post"
                           hx-post="/questions/import" hx-target="#question-import-report" hx-swap="outerHTML">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">

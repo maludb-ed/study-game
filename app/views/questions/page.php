@@ -88,7 +88,7 @@
                 </select>
             </form>
         </div>
-        <?= view('questions/partials/table.php', ['result' => $result, 'filters' => $filters]) ?>
+        <?= view('questions/partials/table.php', ['result' => $result, 'filters' => $filters, 'isAdmin' => $isAdmin]) ?>
     </div>
 </div>
 <!-- [ Main Content ] end -->

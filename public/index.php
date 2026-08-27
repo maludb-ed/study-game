@@ -5,6 +5,10 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 require_once dirname(__DIR__) . '/app/features/dashboard/queries.php';
 
 $user = require_login();
+// The dashboard is an admin screen — members start on Practice (and have no nav link here).
+if (!is_admin($user)) {
+    redirect('/practice');
+}
 $pdo  = db();
 log_screen_view($pdo, 'dashboard');
 

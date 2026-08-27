@@ -1,4 +1,4 @@
-"""Shared plumbing for the Cert Arena MCP services.
+"""Shared plumbing for the Claude Games MCP services.
 
 The READ pool runs on a strictly read-only role (006); the AUTH pool runs on the
 narrow studygame_mcp_auth role (008) and is used only for bearer-token checks and

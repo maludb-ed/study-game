@@ -74,10 +74,21 @@ function require_login(): array
     return $user;
 }
 
+/**
+ * Admin-only areas: Question Bank (questions/scenarios/exams), Analytics and Ask Me Anything.
+ * Members get Dashboard, Game Night, Practice and Settings — the sidenav hides the rest
+ * (app/views/layout.php) and their controllers call require_admin(), so a typed or
+ * bookmarked URL 403s instead of rendering.
+ */
+function is_admin(?array $user): bool
+{
+    return $user !== null && ($user['role'] ?? '') === 'admin';
+}
+
 function require_admin(): array
 {
     $user = require_login();
-    if ($user['role'] !== 'admin') {
+    if (!is_admin($user)) {
         http_response_code(403);
         exit('Forbidden');
     }

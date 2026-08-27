@@ -1,6 +1,6 @@
 # /etc/systemd/system/studygame-assistant.service (Ubuntu 24.04)
 [Unit]
-Description=Cert Arena unified assistant (Claude Agent SDK)
+Description=Claude Games unified assistant (Claude Agent SDK)
 After=network.target studygame-records-mcp.service studygame-activity-mcp.service
 
 [Service]

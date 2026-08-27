@@ -2,7 +2,7 @@
 /**
  * Game report screen (S4): page-header + main-content, three sections — header card,
  * podium/ranking (partials/report-ranking.php), per-question breakdown
- * (partials/report-questions.php). Vars: $game (with 'ranking'), $questionStats.
+ * (partials/report-questions.php). Vars: $game (with 'ranking'), $questionStats, $isAdmin.
  * State vocabulary: lobby -> info, question/reveal/leaderboard -> warning,
  * podium/ended -> success, aborted -> danger.
  */
@@ -86,7 +86,7 @@ $id    = (int) $game['id'];
             </div>
         </div>
         <?= view('games/partials/report-ranking.php', ['game' => $game]) ?>
-        <?= view('games/partials/report-questions.php', ['questionStats' => $questionStats]) ?>
+        <?= view('games/partials/report-questions.php', ['questionStats' => $questionStats, 'isAdmin' => $isAdmin]) ?>
     </div>
 </div>
 <!-- [ Main Content ] end -->

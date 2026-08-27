@@ -1,4 +1,4 @@
-"""Cert Arena activity-memory MCP server (client-facing, read-only).
+"""Claude Games activity-memory MCP server (client-facing, read-only).
 
 Answers 'what happened, who, when' from the activity log through the
 studygame_activity_ro role. In production this points at MaluDB's query surface;

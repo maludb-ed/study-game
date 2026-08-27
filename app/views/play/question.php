@@ -1,16 +1,21 @@
 <?php
 /**
- * Player stage: answer buttons (the phone screen). Vars: $game, $player, $gq, $version.
- * Stem lives on the host screen; buttons show the FULL option text — never truncated.
+ * Player stage: the question + answer buttons (the phone screen). Vars: $game, $player, $gq, $version.
+ * The stem is shown here as well as on the host screen; buttons show the FULL option text — never truncated.
  *
  * A question with 2+ correct options is MULTI-SELECT (all-or-nothing): the player ticks a
  * set and taps "Lock in". The selection form uses hx-preserve so the 1s countdown poll
  * (which self-swaps this stage) doesn't wipe the player's ticks mid-question. Single-correct
  * questions keep the instant single-tap for speed. is_correct is used server-side only.
+ *
+ * The first QUESTION_READ_SECONDS are reading time: the answer clock is pinned at its full
+ * value while the reading seconds count down. Tapping during the window is allowed and is
+ * scored as an instant answer.
  */
 $pollUrl      = '/play/state?v=' . urlencode((string) $version);
 $optionColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
 $remaining    = (int) $gq['seconds_remaining'];
+$reading      = (int) ($gq['reading_remaining'] ?? 0);
 $correctCount = 0;
 foreach ($gq['options'] as $o) { if ($o['is_correct']) { $correctCount++; } }
 $multi = $correctCount > 1;
@@ -20,8 +25,20 @@ $multi = $correctCount > 1;
         <span class="badge bg-soft-warning text-warning" id="play-question-number">
             Question <?= e($gq['position']) ?> / <?= e($game['question_count']) ?>
         </span>
-        <span class="fs-4 fw-bold" id="play-question-countdown"><?= e($remaining) ?>s</span>
+        <span class="fs-4 fw-bold" id="play-question-countdown">
+            <?php if ($reading > 0): ?>
+                <span class="fs-13 text-info" id="play-question-reading">Reading — <?= e($reading) ?>s</span>
+            <?php else: ?>
+                <?= e($remaining) ?>s
+            <?php endif; ?>
+        </span>
     </div>
+    <?php if ($gq['scenario_title'] !== null): ?>
+        <p class="fs-12 text-info mb-2" id="play-question-scenario">
+            <i class="feather-book-open me-1"></i><?= e((string) $gq['scenario_title']) ?>
+        </p>
+    <?php endif; ?>
+    <h2 class="fs-16 fw-bolder mb-3" id="play-question-stem" style="white-space: pre-line; word-break: break-word;"><?= e((string) $gq['stem']) ?></h2>
     <?php if ($multi): ?>
         <p class="fs-13 text-info mb-3" id="play-multi-hint"><i class="feather-check-square me-1"></i>Select all that apply, then lock in.</p>
         <form id="play-answer-form" hx-preserve="true">

@@ -7,7 +7,7 @@ require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/questions/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/scenarios/queries.php';
 
-require_login();
+require_admin();
 $examId    = request_integer('exam_id') ?? 0;
 $domains   = $examId > 0 ? find_domains_for_exam(db(), $examId) : [];
 $scenarios = $examId > 0 ? find_scenarios_for_exam(db(), $examId) : [];

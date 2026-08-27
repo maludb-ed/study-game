@@ -12,7 +12,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= e(config('APP_NAME', 'Cert Arena')) ?> || <?= e($title) ?></title>
+    <title><?= e(config('APP_NAME', 'Claude Games')) ?> || <?= e($title) ?></title>
     <link rel="shortcut icon" type="image/png" href="/assets/images/favicon.png">
     <link rel="stylesheet" type="text/css" href="/assets/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="/assets/vendors/css/vendors.min.css">

@@ -9,7 +9,8 @@ $orders = array_map(static fn ($p) => (int) $p['display_order'], $picked);
 $color  = $optionColors[$orders[0] ?? 0] ?? 'secondary';
 ?>
 <div id="play-stage" hx-get="<?= e($pollUrl) ?>" hx-trigger="every 1s" hx-target="#play-stage" hx-swap="outerHTML">
-    <h2 class="fs-20 fw-bolder mb-3" id="play-locked-title">Locked in!</h2>
+    <h2 class="fs-16 fw-bolder mb-3" id="play-locked-stem" style="white-space: pre-line; word-break: break-word;"><?= e((string) $gq['stem']) ?></h2>
+    <p class="fs-20 fw-bolder mb-3" id="play-locked-title">Locked in!</p>
     <p class="fs-14" id="play-locked-choice">
         <span class="wd-10 ht-10 bg-<?= e($color) ?> me-2 d-inline-block rounded-circle"></span>
         <?php if (count($orders) <= 1): ?>

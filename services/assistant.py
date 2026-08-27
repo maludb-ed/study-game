@@ -1,4 +1,4 @@
-"""Cert Arena unified assistant (chat-actions + AMA): one Claude Agent SDK service
+"""Claude Games unified assistant (chat-actions + AMA): one Claude Agent SDK service
 behind both the command bar (/message) and the AMA page (/ask).
 
 Reads go through the two client-facing MCP servers; actions go through an
@@ -288,7 +288,7 @@ actions_server = create_sdk_mcp_server(
 )
 
 
-SYSTEM_PROMPT = """You are the Cert Arena assistant. Cert Arena is a Kahoot-style study app a
+SYSTEM_PROMPT = """You are the Claude Games assistant. Claude Games is a Kahoot-style study app a
 Claude Partner Network group uses to prepare for the four Anthropic certification exams
 (120 min, pass 720 on a 100-1000 scale): CCAO-F 'Claude Certified Associate, Foundations'
 (say 'associate'), CCDV-F 'Claude Certified Developer, Foundations' ('developer'), CCAR-F

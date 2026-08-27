@@ -5,7 +5,7 @@ require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/questions/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/exams/queries.php';
 
-$user = require_login();
+$user = require_admin();
 $pdo  = db();
 
 $filters = [
@@ -25,7 +25,7 @@ $result = find_questions(
 // Sub-swap (search/pagination/filter) refreshes only the results region.
 if (is_htmx_request() && ($_SERVER['HTTP_HX_TARGET'] ?? '') === 'question-list-results') {
     header('Vary: HX-Request');
-    echo view('questions/partials/table.php', ['result' => $result, 'filters' => $filters]);
+    echo view('questions/partials/table.php', ['result' => $result, 'filters' => $filters, 'isAdmin' => $user['role'] === 'admin']);
     exit;
 }
 
@@ -33,6 +33,7 @@ log_screen_view($pdo, 'question-list');
 $content = view('questions/page.php', [
     'result'  => $result,
     'filters' => $filters,
+    'isAdmin' => $user['role'] === 'admin',
     'exams'   => find_exams_with_counts($pdo),
     'domains' => $filters['exam_id'] > 0 ? find_domains_for_exam($pdo, $filters['exam_id']) : [],
 ]);

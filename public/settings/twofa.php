@@ -89,7 +89,7 @@ if ($view === null) {
             $_SESSION['totp_setup_secret'] = totp_generate_secret();
         }
         $secret = $_SESSION['totp_setup_secret'];
-        $issuer = rawurlencode(config('APP_NAME', 'Cert Arena'));
+        $issuer = rawurlencode(config('APP_NAME', 'Claude Games'));
         $uri = sprintf(
             'otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30',
             $issuer, rawurlencode($full['email']), $secret, $issuer

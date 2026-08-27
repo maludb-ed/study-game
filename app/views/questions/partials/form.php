@@ -139,7 +139,7 @@ $deleteConfirm = $timesDrawn > 0
                             <label class="col-lg-4 col-form-label" id="question-form-field-explanation-label" for="question-form-field-explanation">Explanation <small class="text-muted">(shown at reveal)</small></label>
                             <div class="col-lg-8">
                                 <textarea name="explanation" id="question-form-field-explanation" class="form-control" rows="3"
-                                          minlength="10" maxlength="2000" required><?= e($question['explanation'] ?? '') ?></textarea>
+                                          minlength="10" maxlength="4000" required><?= e($question['explanation'] ?? '') ?></textarea>
                             </div>
                         </div>
                         <div class="mb-4 row" id="question-form-field-difficulty-row">
